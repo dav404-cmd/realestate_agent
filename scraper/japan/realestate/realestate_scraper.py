@@ -4,11 +4,11 @@ import re
 
 from playwright.async_api import async_playwright
 
-from scraper.realestate.xpaths import CARDS,DETAILS_LINK
+from scraper.japan.realestate.xpaths import CARDS,DETAILS_LINK
 
 class RealestateScraper:
     def __init__(self):
-        self.root_path = Path(__file__).parents[2].resolve()
+        self.root_path = Path(__file__).parents[3].resolve()
         self.playwright = None
         self.browser = None
         self.context = None
@@ -30,6 +30,14 @@ class RealestateScraper:
             await self.browser.close()
         if self.playwright:
             await self.playwright.stop()
+
+    async def make_url(self,ids : list) -> list:
+        urls = []
+        for id in ids:
+            url = f"https://realestate.co.jp/en/forsale/view/{id}"
+            urls.append(url)
+        return urls
+
 
     async def get_cards_id(self,url):
         await self.main_page.goto(url)
@@ -60,13 +68,20 @@ class RealestateScraper:
             pages.append((page, url, f"screenshot_{i}.png"))
 
         # Visit all URLs concurrently
-        await asyncio.gather(*[page.goto(url) for page, url, _ in pages])
+        await asyncio.gather(*[page.goto(url, wait_until='domcontentloaded') for page, url, _ in pages])
+        print("page opened")
+        # wait for body
+        await asyncio.gather(*[
+            page.wait_for_selector('body', timeout=60000) for page, _, _ in pages
+        ])
+        print("page loaded")
 
         # Take screenshots concurrently
         await asyncio.gather(*[
             page.screenshot(path=image_path / filename)
             for page, _, filename in pages
         ])
+        print("screen shots taken")
 
     async def scraper(self,building_type = "house"):
         await self.start_browser()
@@ -74,12 +89,10 @@ class RealestateScraper:
 
             url = f"https://realestate.co.jp/en/forsale?building_type={building_type}"
 
-            await self.get_cards_id(url)
+            ids = await self.get_cards_id(url)
 
-            urls = [
-                'https://realestate.co.jp/en/forsale/view/1290951',
-                'https://realestate.co.jp/en/forsale/view/1285594'
-            ]
+            urls = await self.make_url(ids)
+
             await self.collect_data(urls)
         except Exception as e:
             print(f"[scraper] Error :{e}")
