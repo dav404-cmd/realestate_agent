@@ -1,10 +1,12 @@
 from pathlib import Path
 import asyncio
+from asyncio import Semaphore
 import re
 
 from playwright.async_api import async_playwright
 
-from scraper.japan.realestate.xpaths import CARDS,DETAILS_LINK
+from scraper.japan.realestate.xpaths import CARDS,DETAILS_LINK,INFO_TABLE
+from scraper.japan.realestate.data_extractor import extract_data
 
 class RealestateScraper:
     def __init__(self):
@@ -31,7 +33,8 @@ class RealestateScraper:
         if self.playwright:
             await self.playwright.stop()
 
-    async def make_url(self,ids : list) -> list:
+    @staticmethod
+    async def make_url(ids : list) -> list:
         urls = []
         for id in ids:
             url = f"https://realestate.co.jp/en/forsale/view/{id}"
@@ -57,31 +60,44 @@ class RealestateScraper:
         print(ids)
         return ids
 
-    async def collect_data(self,urls):
+    async def collect_data(self, urls):
 
-        image_path = self.root_path / "image"
-        image_path.mkdir(parents=True, exist_ok=True)
+        scraped_results = []
 
-        pages = []
-        for i, url in enumerate(urls):
+        async def handle_page(url, index):
             page = await self.context.new_page()
-            pages.append((page, url, f"screenshot_{i}.png"))
 
-        # Visit all URLs concurrently
-        await asyncio.gather(*[page.goto(url, wait_until='domcontentloaded') for page, url, _ in pages])
-        print("page opened")
-        # wait for body
-        await asyncio.gather(*[
-            page.wait_for_selector('body', timeout=60000) for page, _, _ in pages
-        ])
-        print("page loaded")
+            async def page_closer():
+                await page.close()
 
-        # Take screenshots concurrently
-        await asyncio.gather(*[
-            page.screenshot(path=image_path / filename)
-            for page, _, filename in pages
-        ])
-        print("screen shots taken")
+            try:
+                await page.goto(url, wait_until="networkidle", timeout=60000)
+                print(f"[{index}] Opened: {url}")
+
+                await page.wait_for_selector(INFO_TABLE, timeout=15000)
+                data = await extract_data(page, page_closer)
+
+                if data:
+                    data["url"] = url
+                    scraped_results.append(data)
+                else:
+                    print(f"[{index}] No data extracted: {url}")
+
+            except Exception as e:
+                print(f"[{index}] Error scraping {url}: {e}")
+                await page_closer()
+
+        # Limit concurrency (to avoid hitting the site too hard)
+        sem = asyncio.Semaphore(5)
+
+        async def limited_task(i, url):
+            async with sem:
+                await handle_page(url, i)
+
+        await asyncio.gather(*(limited_task(i, url) for i, url in enumerate(urls)))
+
+        print(f"* Done scraping {len(scraped_results)} pages.")
+        return scraped_results
 
     async def scraper(self,building_type = "house"):
         await self.start_browser()
