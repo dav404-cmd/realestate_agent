@@ -1,37 +1,11 @@
-from pathlib import Path
 import asyncio
-from asyncio import Semaphore
 import re
 
-from playwright.async_api import async_playwright
-
+from scraper.core.base_scraper import BaseScraper
 from scraper.japan.realestate.xpaths import CARDS,DETAILS_LINK,INFO_TABLE
-from scraper.japan.realestate.data_extractor import extract_data
+from scraper.japan.realestate.data_extractor import extract_data,clean_all_listings
 
-class RealestateScraper:
-    def __init__(self):
-        self.root_path = Path(__file__).parents[3].resolve()
-        self.playwright = None
-        self.browser = None
-        self.context = None
-        self.main_page = None
-
-
-    async def start_browser(self):
-        self.playwright = await async_playwright().start()
-        launch_args = {"headless" : False}
-        self.browser = await self.playwright.chromium.launch(**launch_args)
-        self.context = await self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            ignore_https_errors=True
-        )
-        self.main_page = await self.context.new_page()
-
-    async def close_browser(self):
-        if self.browser:
-            await self.browser.close()
-        if self.playwright:
-            await self.playwright.stop()
+class RealestateScraper(BaseScraper):
 
     @staticmethod
     async def make_url(ids : list) -> list:
@@ -97,7 +71,10 @@ class RealestateScraper:
         await asyncio.gather(*(limited_task(i, url) for i, url in enumerate(urls)))
 
         print(f"* Done scraping {len(scraped_results)} pages.")
-        return scraped_results
+        clean_scraped_results = clean_all_listings(scraped_results)
+        print(clean_scraped_results)
+        return clean_scraped_results
+
 
     async def scraper(self,building_type = "house"):
         await self.start_browser()
@@ -109,7 +86,12 @@ class RealestateScraper:
 
             urls = await self.make_url(ids)
 
-            await self.collect_data(urls)
+            data = await self.collect_data(urls)
+
+            await self.store_csv(data,"test")
+
+
+
         except Exception as e:
             print(f"[scraper] Error :{e}")
         except KeyboardInterrupt:
