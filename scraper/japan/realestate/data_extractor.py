@@ -1,4 +1,7 @@
 import re
+from utils.logger import get_logger
+
+res_log = get_logger("RealestateExtractor")
 
 def clean_listing_block(raw_text: str):
     data = {}
@@ -60,7 +63,7 @@ async def extract_data(page,browser_closer):
     await page.wait_for_selector("dl.dl-horizontal-border", timeout=10000)
 
     try:
-        print("found table")
+        #res_log.info("found table")
         dts = await page.query_selector_all("dl.dl-horizontal-border dt")
         dds = await page.query_selector_all("dl.dl-horizontal-border dd")
         data = {}
@@ -72,7 +75,7 @@ async def extract_data(page,browser_closer):
         await browser_closer()
         return data
     except Exception as e:
-        print(f"error extracting {e}")
+        res_log.error(f"error extracting : {e}")
         return None
     finally:
         await browser_closer()

@@ -5,6 +5,10 @@ from scraper.core.base_scraper import BaseScraper
 from scraper.japan.realestate.xpaths import CARDS,DETAILS_LINK,INFO_TABLE
 from scraper.japan.realestate.data_extractor import extract_data,clean_all_listings
 
+from utils.logger import get_logger
+
+res_log = get_logger("RealestateScraper")
+
 class RealestateScraper(BaseScraper):
 
     @staticmethod
@@ -19,7 +23,7 @@ class RealestateScraper(BaseScraper):
     async def get_cards_id(self,url):
         await self.main_page.goto(url)
         cards = await self.main_page.query_selector_all(CARDS)
-        print(f"found {len(cards)} cards")
+        res_log.info(f"found {len(cards)} cards")
         ids = []
         for card in cards:
             link = await card.query_selector(DETAILS_LINK)
@@ -29,9 +33,8 @@ class RealestateScraper(BaseScraper):
                 if match:
                     ids.append(match.group(1))
             else:
-                print("link not found.")
-        print("found ids")
-        print(ids)
+                res_log.error("link not found.")
+        res_log.info("found ids")
         return ids
 
     async def collect_data(self, urls):
@@ -46,7 +49,7 @@ class RealestateScraper(BaseScraper):
 
             try:
                 await page.goto(url, wait_until="networkidle", timeout=60000)
-                print(f"[{index}] Opened: {url}")
+                res_log.info(f"[{index}] Opened: {url}")
 
                 await page.wait_for_selector(INFO_TABLE, timeout=15000)
                 data = await extract_data(page, page_closer)
@@ -55,10 +58,13 @@ class RealestateScraper(BaseScraper):
                     data["url"] = url
                     scraped_results.append(data)
                 else:
-                    print(f"[{index}] No data extracted: {url}")
+                    res_log.warning(f"[{index}] No data extracted: {url}")
+
+            except KeyboardInterrupt:
+                res_log.warning("process stopped by the user.")
 
             except Exception as e:
-                print(f"[{index}] Error scraping {url}: {e}")
+                res_log.error(f"[{index}] Error scraping {url}: {e}")
                 await page_closer()
 
         # Limit concurrency (to avoid hitting the site too hard)
@@ -70,12 +76,11 @@ class RealestateScraper(BaseScraper):
 
         await asyncio.gather(*(limited_task(i, url) for i, url in enumerate(urls)))
 
-        print(f"* Done scraping {len(scraped_results)} pages.")
+        res_log.info(f"* Done scraping {len(scraped_results)} pages.")
         clean_scraped_results = clean_all_listings(scraped_results)
-        print(clean_scraped_results)
         return clean_scraped_results
 
-
+    # The main runner function.
     async def scraper(self,building_type = "house"):
         await self.start_browser()
         try:
@@ -88,14 +93,12 @@ class RealestateScraper(BaseScraper):
 
             data = await self.collect_data(urls)
 
-            await self.store_csv(data,"test")
-
-
+            await self.store_csv(data,"real_estate")
 
         except Exception as e:
-            print(f"[scraper] Error :{e}")
+            res_log.error(f"Error :{e}")
         except KeyboardInterrupt:
-            print(f"scraper stopped by user.")
+            res_log.warning(f"scraper stopped by user.")
         finally:
             await self.close_browser()
 
