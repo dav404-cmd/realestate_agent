@@ -9,7 +9,7 @@ from utils.logger import get_logger
 
 res_log = get_logger("RealestateScraper")
 
-class RealestateScraper(BaseScraper):
+class RealestateScraperLogic(BaseScraper):
 
     @staticmethod
     async def make_url(ids : list) -> list:
@@ -48,7 +48,7 @@ class RealestateScraper(BaseScraper):
                 await page.close()
 
             try:
-                await page.goto(url, wait_until="networkidle", timeout=60000)
+                await page.goto(url, timeout=30000, wait_until="domcontentloaded")
                 res_log.info(f"[{index}] Opened: {url}")
 
                 await page.wait_for_selector(INFO_TABLE, timeout=15000)
@@ -79,30 +79,3 @@ class RealestateScraper(BaseScraper):
         res_log.info(f"* Done scraping {len(scraped_results)} pages.")
         clean_scraped_results = clean_all_listings(scraped_results)
         return clean_scraped_results
-
-    # The main runner function.
-    async def scraper(self,building_type = "house"):
-        await self.start_browser()
-        try:
-
-            url = f"https://realestate.co.jp/en/forsale?building_type={building_type}"
-
-            ids = await self.get_cards_id(url)
-
-            urls = await self.make_url(ids)
-
-            data = await self.collect_data(urls)
-
-            await self.store_csv(data,"real_estate")
-
-        except Exception as e:
-            res_log.error(f"Error :{e}")
-        except KeyboardInterrupt:
-            res_log.warning(f"scraper stopped by user.")
-        finally:
-            await self.close_browser()
-
-if __name__ == "__main__":
-    scrape = RealestateScraper()
-    task = scrape.scraper()
-    asyncio.run(task)
