@@ -77,8 +77,6 @@ async def extract_data(page,browser_closer):
     except Exception as e:
         res_log.error(f"error extracting : {e}")
         return None
-    finally:
-        await browser_closer()
 
 if __name__ == "__main__":
     raw_txt = """Unit Number: -

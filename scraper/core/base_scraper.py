@@ -30,7 +30,7 @@ class BaseScraper:
         if self.playwright:
             await self.playwright.stop()
 
-    async def store_csv(self,data,file_name):
+    async def store_csv(self,data,file_name,append_mode = False):
         data_dir = self.root_path / "data"
         data_dir.mkdir(exist_ok=True)
 
@@ -41,6 +41,14 @@ class BaseScraper:
             data = [data]
 
         df = pd.DataFrame(data)
-        df.to_csv(output_file, index=False)
-        print(f"Saved to CSV: {output_file}")
+
+        if append_mode:
+            file_exists = output_file.exists()
+            df.to_csv(output_file, mode='a', header=not file_exists, index=False)
+            print(f"Appended to CSV: {output_file}")
+
+        else:
+            df.to_csv(output_file, index=False)
+            print(f"Overwriting to CSV: {output_file}")
+
 
