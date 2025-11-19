@@ -9,7 +9,8 @@ class RealestateScraperRunner:
     def __init__(self):
         self.scraper = RealestateScraperLogic()
 
-    async def check_last_page(self,previous_ids,ids,page_no):
+    @staticmethod
+    def check_last_page(previous_ids,ids,page_no):
         # Detect repeated pages (site looping last page)
         if previous_ids is not None and ids == previous_ids:
             res_log.warning(f"Page {page_no} repeated the last page → stopping.")
@@ -17,10 +18,8 @@ class RealestateScraperRunner:
         else:
             return False
 
-
-
     # The main runner function.
-    async def run(self,building_type = "house",max_pages = 10):
+    async def run(self,building_type = "house",max_pages = 3):
         await self.scraper.start_browser()
 
         page_no = 1
@@ -42,7 +41,7 @@ class RealestateScraperRunner:
                         res_log.warning(f"No cards in {url}; stopping.")
                         break
 
-                last_page = await self.check_last_page(previous_ids,ids,page_no)
+                last_page = self.check_last_page(previous_ids,ids,page_no)
                 if last_page:
                     break
                 previous_ids = ids
@@ -51,7 +50,7 @@ class RealestateScraperRunner:
 
                 data = await self.scraper.collect_data(urls)
 
-                await self.scraper.store_csv(data,file_name="real_estate",append_mode=True)
+                self.scraper.store_json(data,file_name="real_estate")
 
                 page_no += 1
 

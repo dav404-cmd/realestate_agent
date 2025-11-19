@@ -1,7 +1,9 @@
 from playwright.async_api import async_playwright
 import asyncio
 from pathlib import Path
+import json
 import pandas as pd
+import os
 
 # the base script for scrapers.
 
@@ -30,7 +32,7 @@ class BaseScraper:
         if self.playwright:
             await self.playwright.stop()
 
-    async def store_csv(self,data,file_name,append_mode = False):
+    def store_csv(self,data,file_name,append_mode = True):
         data_dir = self.root_path / "data"
         data_dir.mkdir(exist_ok=True)
 
@@ -44,11 +46,42 @@ class BaseScraper:
 
         if append_mode:
             file_exists = output_file.exists()
-            df.to_csv(output_file, mode='a', header=not file_exists, index=False)
-            print(f"Appended to CSV: {output_file}")
+            file_empty = not file_exists or os.path.getsize(output_file) == 0
 
+            df.to_csv(
+                output_file,
+                mode='a',
+                header=file_empty,
+                index=False
+            )
+            print(f"Appended to CSV: {output_file}")
         else:
             df.to_csv(output_file, index=False)
             print(f"Overwriting to CSV: {output_file}")
 
+    def store_json(self, data, file_name):
+        data_dir = self.root_path / "data"
+        data_dir.mkdir(exist_ok=True)
+
+        output_file = data_dir / f"{file_name}.json"
+
+        if output_file.exists():
+            try:
+                old = json.loads(output_file.read_text(encoding="utf-8-sig"))
+
+                if isinstance(old, list) and isinstance(data, list):
+                    new = old + data
+                else:
+                    new = data
+
+            except Exception as e:
+                print(f"error in storing json : {e}")
+                new = data
+        else:
+            new = data
+
+        output_file.write_text(
+            json.dumps(new, indent=2, ensure_ascii=False),
+            encoding="utf-8-sig"
+        )
 
