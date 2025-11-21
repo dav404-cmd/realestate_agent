@@ -3,7 +3,8 @@ import re
 
 from scraper.core.base_scraper import BaseScraper
 from scraper.japan.realestate.xpaths import CARDS,DETAILS_LINK,INFO_TABLE
-from scraper.japan.realestate.data_extractor import extract_data,clean_all_listings
+from scraper.japan.realestate.data_extractor import extract_data
+from scraper.japan.realestate.clean_data import clean_all_listings
 
 from utils.logger import get_logger
 
