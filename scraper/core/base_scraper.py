@@ -67,7 +67,12 @@ class BaseScraper:
 
         if output_file.exists():
             try:
-                old = json.loads(output_file.read_text(encoding="utf-8-sig"))
+                text = output_file.read_text(encoding="utf-8-sig").strip()
+
+                if text:
+                    old = json.loads(text)
+                else:
+                    old = []
 
                 if isinstance(old, list) and isinstance(data, list):
                     new = old + data

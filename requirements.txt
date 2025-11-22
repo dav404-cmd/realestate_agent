@@ -1,2 +1,4 @@
 playwright
 pandas
+psycopg2
+python-dotenv
