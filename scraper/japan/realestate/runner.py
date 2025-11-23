@@ -50,6 +50,7 @@ class RealestateScraperRunner:
 
                 data = await self.scraper.collect_data(urls)
 
+                self.scraper.store_db("jp_realestate","realestate.co",data,create_table=False)
                 self.scraper.store_json(data,file_name="real_estate")
 
                 page_no += 1

@@ -5,6 +5,8 @@ import json
 import pandas as pd
 import os
 
+from manage_db.db_manager import DbManager
+
 # the base script for scrapers.
 
 class BaseScraper:
@@ -89,4 +91,18 @@ class BaseScraper:
             json.dumps(new, indent=2, ensure_ascii=False),
             encoding="utf-8-sig"
         )
+
+    @staticmethod
+    def store_db(table_name:str,source:str,dic_lis,create_table = True):
+        db = DbManager(table_name,source)
+        if create_table:
+            db.create_table()
+
+        ids = db.insert_listing(dic_lis)
+        print(f"Inserted {len(ids)} new rows into {table_name}, skipped {len(dic_lis) - len(ids)} duplicates")
+        db.close_conn()
+        return ids
+
+
+
 
