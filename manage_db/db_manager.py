@@ -4,7 +4,8 @@ from psycopg2 import sql
 from dotenv import load_dotenv
 import os
 import json
-
+from sqlalchemy import create_engine
+import pandas as pd
 from utils.logger import get_logger
 
 db_log = get_logger("Db_Manager")
@@ -68,3 +69,49 @@ class DbManager:
         self.cursor.execute(query)
         return self.cursor.fetchall()
 
+    @staticmethod
+    def get_db_engine():
+        dbname = os.getenv("DB_NAME")
+        user = os.getenv("DB_USER")
+        password = os.getenv("DB_PASSWORD")
+        host = os.getenv("DB_HOST")
+        port = os.getenv("DB_PORT")
+
+        # Replace with your actual credentials
+        engine = create_engine(f"postgresql://{user}:{password}@{host}:{port}/{dbname}")
+        try:
+            with engine.connect() as conn:
+                pass
+        except Exception as e:
+            print(f"Connection to  {dbname} failed , error : {e}")
+        return engine
+
+    @staticmethod
+    def auto_cast_numeric(df):
+        # Exclude base columns that should not be cast
+        exclude = {"id", "source", "scraped_at"}
+        for col in df.columns:
+            if col not in exclude:
+                df[col] = pd.to_numeric(df[col], errors="ignore")
+        return df
+
+    def load_data(self):
+        query = f"""
+            SELECT id, source, scraped_at, j.key, j.value
+            FROM {self.table_name}
+            CROSS JOIN LATERAL jsonb_each_text(data) AS j(key, value);
+        """
+        engine = self.get_db_engine()
+        df_long = pd.read_sql(query, engine)
+
+        # Pivot to wide format
+        df = df_long.pivot_table(
+            index=["id", "source", "scraped_at"],
+            columns="key",
+            values="value",
+            aggfunc="first"
+        ).reset_index()
+
+        df = self.auto_cast_numeric(df)
+
+        return df
