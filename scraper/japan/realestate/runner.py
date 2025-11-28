@@ -19,7 +19,7 @@ class RealestateScraperRunner:
             return False
 
     # The main runner function.
-    async def run(self,building_type = "house",max_pages = 3):
+    async def run(self,building_type = None,max_pages = 3):  #None = all property
         await self.scraper.start_browser()
 
         page_no = 1
@@ -30,7 +30,10 @@ class RealestateScraperRunner:
 
                 res_log.info(f"scraping page {page_no}")
 
-                url = f"https://realestate.co.jp/en/forsale?building_type={building_type}&page={page_no}"
+                if not building_type:
+                    url = f"https://realestate.co.jp/en/forsale?page={page_no}"
+                else:
+                    url = f"https://realestate.co.jp/en/forsale?building_type={building_type}&page={page_no}"
 
                 ids = await self.scraper.get_cards_id(url)
 

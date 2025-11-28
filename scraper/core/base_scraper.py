@@ -35,7 +35,7 @@ class BaseScraper:
             await self.playwright.stop()
 
     def store_csv(self,data,file_name,append_mode = True):
-        data_dir = self.root_path / "data"
+        data_dir = self.root_path / "data" / "raw"
         data_dir.mkdir(exist_ok=True)
 
         output_file = data_dir / f"{file_name}.csv"
@@ -62,7 +62,7 @@ class BaseScraper:
             print(f"Overwriting to CSV: {output_file}")
 
     def store_json(self, data, file_name):
-        data_dir = self.root_path / "data"
+        data_dir = self.root_path / "data" / "raw"
         data_dir.mkdir(exist_ok=True)
 
         output_file = data_dir / f"{file_name}.json"
