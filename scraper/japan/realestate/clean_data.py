@@ -1,6 +1,6 @@
 import re
 from utils.logger import get_logger
-
+from data.data_cleaner.clean_date import normalize_date
 res_log = get_logger("RealestateCleaner")
 
 
@@ -158,10 +158,18 @@ def customize_listing(cleaned_dict: dict):
     KEY_MAP = {
         "price": "price_yen"
     }
+    TRANSFORM = {
+        "available_from" : normalize_date,
+        "date_updated" : normalize_date,
+        "next_update_schedule" : normalize_date
+    }
 
     final = {}
 
     for clean_key, clean_value in cleaned_dict.items():
+
+        if clean_key in TRANSFORM:
+            clean_value = TRANSFORM[clean_key](clean_value)
 
         # If key is mapped → rename it
         if clean_key in KEY_MAP:

@@ -32,3 +32,13 @@ def normalize_date(value):
         return dt.strftime("%Y-%m-%d")
     except ValueError:
         return None
+
+if __name__ == "__main__":
+    # --tests--
+    t1 = normalize_date("Early Nov 2025")
+    t2 = normalize_date("Mid Oct 2025")
+    t3 = normalize_date("Late Nov 2025")
+    t4 = normalize_date("Apr 7, 2025")
+    t5 = normalize_date("Please Inquire")
+
+    print(f"{t1}\n{t2}\n{t3}\n{t4}\n{t5}")
