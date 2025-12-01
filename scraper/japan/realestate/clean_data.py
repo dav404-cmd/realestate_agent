@@ -3,7 +3,6 @@ from utils.logger import get_logger
 from data.data_cleaner.clean_date import normalize_date
 res_log = get_logger("RealestateCleaner")
 
-
 def normalize_key(key: str) -> str:
     if not isinstance(key, str):
         key = str(key)
@@ -111,6 +110,29 @@ def try_parse_percentage(s):
     return None
 
 
+def parse_floor(value):
+    if not value:
+        return (None,None)
+
+    value = str(value).strip()
+
+    # Case: "2 / 4F" or "41 / 52F"
+    match = re.match(r"(\d+)\s*/\s*(\d+)F", value)
+    if match:
+        unit_floor, total_floors = match.groups()
+        return (int(unit_floor), int(total_floors))
+
+    # Case: "3F" (simple single floor)
+    match = re.match(r"(\d+)F", value)
+    if match:
+        unit_floor = int(match.group(1))
+        return (unit_floor, None)
+
+    return (None,None) # tuple(a,b) /a = unit floor , b = total floor
+
+
+
+
 def clean_value(key, value):
     v = clean_text(value)
 
@@ -161,7 +183,9 @@ def customize_listing(cleaned_dict: dict):
     TRANSFORM = {
         "available_from" : normalize_date,
         "date_updated" : normalize_date,
-        "next_update_schedule" : normalize_date
+        "next_update_schedule" : normalize_date,
+        "floor" : parse_floor,
+        "floors": parse_floor,
     }
 
     final = {}
