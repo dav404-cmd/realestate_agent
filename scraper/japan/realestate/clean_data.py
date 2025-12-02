@@ -122,15 +122,20 @@ def parse_floor(value):
         unit_floor, total_floors = match.groups()
         return (int(unit_floor), int(total_floors))
 
+    return (None,None) # tuple(a,b) /a = unit floor , b = total floor
+
+def parse_floors(value):
+    if not value:
+        return None
+    value = str(value).strip()
+
     # Case: "3F" (simple single floor)
     match = re.match(r"(\d+)F", value)
     if match:
         unit_floor = int(match.group(1))
-        return (unit_floor, None)
+        return unit_floor
 
-    return (None,None) # tuple(a,b) /a = unit floor , b = total floor
-
-
+    return None
 
 
 def clean_value(key, value):
@@ -185,7 +190,7 @@ def customize_listing(cleaned_dict: dict):
         "date_updated" : normalize_date,
         "next_update_schedule" : normalize_date,
         "floor" : parse_floor,
-        "floors": parse_floor,
+        "floors": parse_floors,
     }
 
     final = {}

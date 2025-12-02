@@ -64,6 +64,25 @@ class DbManager:
 
         return ids
 
+    def delete_all(self):
+        db_log.critical(f"This will delete all data from {self.table_name} database")
+        do_reset = input(
+            "DO YOU WISH TO PROCEED ?\n"
+            "TYPE (YES I WANT TO DELETE DATABASE)\n"
+            "ANYTHING ELSE WILL BE CONSIDERED NO.\nEnter answer : "
+        )
+
+        if do_reset == "YES I WANT TO DELETE DATABASE":
+            query = sql.SQL("DELETE FROM {table}").format(table=sql.Identifier(self.table_name))
+            self.cursor.execute(query)
+            self.conn.commit()
+            db_log.critical(f"DELETED all from {self.table_name}")
+
+        else:
+            db_log.critical(f"Database {self.table_name} was NOT deleted")
+
+
+
     def fetch_all(self):
         query = sql.SQL("SELECT * FROM {table}").format(table=sql.Identifier(self.table_name))
         self.cursor.execute(query)
