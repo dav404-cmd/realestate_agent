@@ -22,8 +22,9 @@ class RealestateScraperRunner:
     async def run(self,building_type = None,max_pages = 389):  #None = all property
         await self.scraper.start_browser()
 
-        page_no = 145
+        page_no = 180
         previous_ids = None
+        session_seen_id = set()
 
         try:
             while page_no <= max_pages:
@@ -49,7 +50,7 @@ class RealestateScraperRunner:
                     break
                 previous_ids = ids
 
-                urls = await self.scraper.make_url(ids)
+                urls = await self.scraper.make_url(ids,session_seen_id)
 
                 data = await self.scraper.collect_data(urls)
 

@@ -13,11 +13,15 @@ res_log = get_logger("RealestateScraper")
 class RealestateScraperLogic(BaseScraper):
 
     @staticmethod
-    async def make_url(ids : list) -> list:
+    async def make_url(ids : list,session_seen_id : set) -> list:
         urls = []
         for id in ids:
-            url = f"https://realestate.co.jp/en/forsale/view/{id}"
-            urls.append(url)
+            if id not in session_seen_id:
+                url = f"https://realestate.co.jp/en/forsale/view/{id}"
+                urls.append(url)
+                session_seen_id.add(id)
+            else:
+                res_log.info(f"auto ignored {id}")
         return urls
 
 
