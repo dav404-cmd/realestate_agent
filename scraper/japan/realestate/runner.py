@@ -19,10 +19,10 @@ class RealestateScraperRunner:
             return False
 
     # The main runner function.
-    async def run(self,building_type = None,max_pages = 3):  #None = all property
+    async def run(self,building_type = None,max_pages = 389):  #None = all property
         await self.scraper.start_browser()
 
-        page_no = 1
+        page_no = 145
         previous_ids = None
 
         try:
