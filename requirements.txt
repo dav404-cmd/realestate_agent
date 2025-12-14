@@ -4,3 +4,8 @@ psycopg2
 python-dotenv
 sqlalchemy
 jupyterlab
+lightgbm
+scikit-learn
+shap
+matplotlib
+seaborn

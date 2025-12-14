@@ -22,7 +22,7 @@ class RealestateScraperRunner:
     async def run(self,building_type = None,max_pages = 389):  #None = all property
         await self.scraper.start_browser()
 
-        page_no = 180
+        page_no = 315
         previous_ids = None
         session_seen_id = set()
 
