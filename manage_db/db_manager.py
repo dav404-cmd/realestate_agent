@@ -13,7 +13,7 @@ db_log = get_logger("Db_Manager")
 load_dotenv()
 
 class DbManager:
-    def __init__(self,table_name,source):
+    def __init__(self,table_name,source = None):
         self.conn = psycopg2.connect(
             dbname=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
@@ -111,7 +111,10 @@ class DbManager:
         exclude = {"id", "source", "scraped_at"}
         for col in df.columns:
             if col not in exclude:
-                df[col] = pd.to_numeric(df[col], errors="ignore")
+                try:
+                    df[col] = pd.to_numeric(df[col])
+                except Exception:
+                    pass
         return df
 
     def load_data(self):
@@ -134,3 +137,14 @@ class DbManager:
         df = self.auto_cast_numeric(df)
 
         return df
+
+    def list_tables(self):
+        query = """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_type = 'BASE TABLE';
+        """
+        self.cursor.execute(query)
+        return [row["table_name"] for row in self.cursor.fetchall()]
+
