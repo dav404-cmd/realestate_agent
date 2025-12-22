@@ -4,7 +4,31 @@ from typing import Optional, List
 
 from manage_db.db_manager import DbManager
 
+def build_db_profile(df:pd.DataFrame):
+    profile = {}
+    ignore = ["url","building_description"]
+    for col in df.columns:
+        if col in ignore:
+            continue
 
+        series = df[col].dropna()
+
+        if series.empty:
+            continue
+
+        if pd.api.types.is_numeric_dtype(series):
+            profile[col] = {
+                "type":"numeric",
+                "min" : float(series.min()),
+                "max" : float(series.max()),
+                "avg" : float(series.mean())
+            }
+        else:
+            profile[col] = {
+                "type" : "categorical",
+                "unique_samples" : list(series.unique()[:20])
+            }
+    return profile
 
 class PropertyQuery(BaseModel):
     min_price: Optional[int] = None
@@ -72,3 +96,6 @@ if __name__ == "__main__":
         "structure",
         "url"
     ]])
+
+    profile = build_db_profile(df)
+    print(profile)

@@ -236,7 +236,7 @@ def clean_all_listings(data_list):
             res_log.error(f"Cleaning error for item: {e}")
     return cleaned
 
-# ---Extra layer 2 cleaning to make it llm friendly , Used after data storing.
+# ---Extra 2nt layer cleaning to make it cleaner and llm friendly while compressed , Used after data storing.
 def make_df_structurally_safe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
@@ -257,6 +257,28 @@ def make_df_structurally_safe(df: pd.DataFrame) -> pd.DataFrame:
     if "floors" in df.columns:
         df["total_floors"] = df["floors"]
         df.drop(columns=["floors"],inplace = True)
+
+    if "parking" in df.columns:
+        df["clean_parking"] = (
+            df["parking"]
+            .fillna("")  # replace NaN with empty string
+            .astype(str)  # ensure all values are strings
+        )
+        df["parking_status"] = (
+            df['clean_parking']
+            .str.split(",").str[0].str.strip()  # extract first part
+            .eq("Available")  # compare to "Available"
+        )
+
+        df["parking_cost_mth"] = (
+            df["clean_parking"]
+            .str.extract(r"¥([\d,]+)\s*/\s*mth")[0]
+            .str.replace(",", "")
+            .astype(float)
+        )
+
+        df = df.drop(columns=["clean_parking", "parking"])
+        df["parking_cost_mth"] = df["parking_cost_mth"].fillna(0)
 
     return df
 
