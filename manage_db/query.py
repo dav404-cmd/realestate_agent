@@ -6,7 +6,7 @@ from manage_db.db_manager import DbManager
 
 def build_db_profile(df:pd.DataFrame):
     profile = {}
-    ignore = ["url","building_description"]
+    ignore = ["url","building_description","id"]
     for col in df.columns:
         if col in ignore:
             continue
