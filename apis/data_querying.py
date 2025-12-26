@@ -7,7 +7,6 @@ from manage_db.db_manager import DbManager
 from manage_db.query import query_properties, PropertyQuery
 
 from data.data_cleaner.to_json_safe import df_to_json_safe_records
-from scraper.japan.realestate.clean_data import make_df_structurally_safe
 
 from utils.logger import get_logger
 api_log = get_logger("API_log")
@@ -21,7 +20,6 @@ def load_data():
     db = DbManager(table_name="jp_realestate")
     df = db.load_data()
     db.close_conn()
-    df = make_df_structurally_safe(df)
     api_log.info(f"Loaded {len(df)} rows into memory")
 
 @app.post("/search")
@@ -42,14 +40,13 @@ if __name__ == "__main__":
     db = DbManager(table_name="jp_realestate")
     df = db.load_data()
     db.close_conn()
-    df_1 = make_df_structurally_safe(df)
 
     q = PropertyQuery(
         max_price=400000000,
         min_size=40,
         limit=2
     )
-    results = query_properties(df_1, q)
+    results = query_properties(df, q)
     df_2 = jsonable_encoder(df_to_json_safe_records(results))
 
     print(JSONResponse(content=df_2).body)

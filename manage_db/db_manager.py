@@ -8,6 +8,8 @@ from sqlalchemy import create_engine
 import pandas as pd
 from utils.logger import get_logger
 
+from scraper.japan.realestate.clean_data import make_df_structurally_safe
+
 db_log = get_logger("Db_Manager")
 
 load_dotenv()
@@ -135,6 +137,11 @@ class DbManager:
         ).reset_index()
 
         df = self.auto_cast_numeric(df)
+
+        if self.table_name == "jp_realestate":
+            # This table stores heterogeneous scraped JSON
+            # Structural normalization is REQUIRED before querying
+            df = make_df_structurally_safe(df)
 
         return df
 

@@ -9,24 +9,27 @@ INTENT_ROUTER_SYSTEM = """
     - property_search
     """
 
-def intent_router(state:AgentState,llm) -> AgentState:
-    result = llm.invoke(
-        system=INTENT_ROUTER_SYSTEM,
-        user=state.user_input
-    ).lower()
+def make_intent_router(llm):
+    def intent_router(state:AgentState) -> AgentState:
+        result = llm.invoke(
+            system=INTENT_ROUTER_SYSTEM,
+            user=state.user_input
+        ).lower()
 
 
-    if "property" in result or "house" in result:
-        state.intent = "property_search"
-    else:
-        state.intent = "chat"
+        if "property" in result or "house" in result:
+            state.intent = "property_search"
+        else:
+            state.intent = "chat"
 
-    return state
+        return state
+    return intent_router
 
 if __name__ == "__main__":
     state = AgentState(
         user_input="i want to buy a house",
     )
     llm = BytezLLM("Qwen/Qwen3-4B-Instruct-2507")
-    state1 = intent_router(state,llm)
+    router = make_intent_router(llm)
+    state1 = router(state)
     print(state1)

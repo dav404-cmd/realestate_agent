@@ -12,3 +12,4 @@ seaborn
 pydantic
 fastapi
 uvicorn[standard]
+langgraph
