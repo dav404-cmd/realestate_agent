@@ -13,7 +13,7 @@ matching properties and receive alerts.
 - Agent-based querying (LLM)
 - Basic deal matching logic
 - Ml analysis prototype 
-- 
+
 ## Planned Features
 - Data extraction(multi-source)
 - Agentic research tools
