@@ -12,5 +12,6 @@ image/
 
 data/raw
 
+ml_analysis
 ml_analysis/notebooks/.ipynb_checkpoints
 ml_analysis/models

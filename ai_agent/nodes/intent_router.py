@@ -25,6 +25,10 @@ def make_intent_router(llm):
         return state
     return intent_router
 
+def route_by_intent(state: AgentState) -> str:
+    return state.intent or "chat"
+
+
 if __name__ == "__main__":
     state = AgentState(
         user_input="i want to buy a house",
@@ -32,4 +36,7 @@ if __name__ == "__main__":
     llm = BytezLLM("Qwen/Qwen3-4B-Instruct-2507")
     router = make_intent_router(llm)
     state1 = router(state)
-    print(state1)
+    print(state1.intent)
+
+    answer = route_by_intent(state1)
+    print(answer)
