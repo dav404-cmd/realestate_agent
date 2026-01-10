@@ -13,3 +13,5 @@ pydantic
 fastapi
 uvicorn[standard]
 langgraph
+pytest
+pytest-asyncio

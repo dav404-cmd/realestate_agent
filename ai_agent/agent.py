@@ -18,6 +18,6 @@ def real_estate_agent(message:str):
     return final_state["response"]
 
 if __name__ == "__main__":
-    user_input = "i want to buy a house of within 100 mil to 200 mil yen , with wood structure that is vacant"
+    user_input = "i want to buy a house of around 15739655 yen , with wood structure that is vacant"
     response = real_estate_agent(user_input)
     print(response)

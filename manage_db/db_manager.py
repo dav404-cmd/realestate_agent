@@ -28,8 +28,10 @@ class DbManager:
         self.source = source
 
     def close_conn(self):
-        self.cursor.close()
-        self.conn.close()
+        if self.cursor:
+            self.cursor.close()
+        if self.conn:
+            self.conn.close()
 
     def create_table(self):
         query = sql.SQL("""
