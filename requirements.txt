@@ -13,5 +13,6 @@ pydantic
 fastapi
 uvicorn[standard]
 langgraph
+langchain_core
 pytest
 pytest-asyncio
