@@ -1,4 +1,5 @@
 from langgraph.graph import StateGraph,END
+from langgraph.checkpoint.memory import MemorySaver
 
 from ai_agent.nodes.casual_responder import make_casual_responder
 from ai_agent.nodes.info_loader import make_load_profile
@@ -33,4 +34,6 @@ def build_graph(llm,df):
     graph.add_edge("search","explain")
     graph.add_edge("explain",END)
 
-    return graph.compile()
+    checkpointer = MemorySaver()
+
+    return graph.compile(checkpointer=checkpointer)

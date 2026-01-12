@@ -3,10 +3,14 @@ from ai_agent.state import AgentState
 
 from manage_db.db_manager import DbManager
 def make_load_profile(df):
-    def load_profile(state: AgentState) -> AgentState:
-        state.db_profile = build_db_profile(df)
-        return state
+    def load_profile(state: AgentState):
+        if state.db_profile is None:
+            return {
+                "db_profile": build_db_profile(df)
+            }
+        return {}
     return load_profile
+
 
 if __name__ == "__main__":
     db = DbManager(table_name="jp_realestate")

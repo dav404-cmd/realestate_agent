@@ -1,9 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel,Field
 from typing import Optional, List, Dict, Any
+from langchain_core.messages import BaseMessage
 
 class AgentState(BaseModel):
     # user input
     user_input: str
+
+    #memory
+    messages: List[BaseMessage] = Field(default_factory=list)
 
     # routing
     intent: Optional[str] = None
