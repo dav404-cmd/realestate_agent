@@ -6,6 +6,7 @@ import os
 import requests
 import json
 
+
 load_dotenv()
 
 _THINK_REGEX = re.compile(r"<think>.*?</think>", re.DOTALL)
@@ -18,10 +19,12 @@ class BytezLLM:
         self.sdk = Bytez(key)
         self.model = self.sdk.model(model_name)
 
-    def invoke(self, system: str | None = None, user: str = "") -> str:
+    def invoke(self, system: str | None = None, user: str = "", history:list | None = None) -> str:
         messages = []
         if system:
             messages.append({"role": "system", "content": system})
+        if history:
+            messages.extend(history)
         messages.append({"role": "user", "content": user})
 
         response = self.model.run(messages)
@@ -41,10 +44,12 @@ class OpenRouterLLM:
             raise ValueError("OPENROUTER_KEY not found in .env")
         self.model = model_name
 
-    def invoke(self,system:str | None = None , user: str = "") -> str:
+    def invoke(self,system:str | None = None , user: str = "",history:list | None = None) -> str:
         messages = []
         if system:
             messages.append({"role":"system","content":system})
+        if history:
+            messages.extend(history)
         messages.append({"role":"user","content":user})
 
         response = requests.post(

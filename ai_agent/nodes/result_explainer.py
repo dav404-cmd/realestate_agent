@@ -1,4 +1,7 @@
 from ai_agent.state import AgentState
+from ai_agent.to_history import get_history
+
+from langchain_core.messages import HumanMessage,AIMessage
 
 RESULT_EXPLAINER_SYSTEM = """
 You are a real estate assistant helping users choose the best property.
@@ -34,12 +37,20 @@ def format_results_for_llm(results):
 
 def make_result_explainer(llm):
     def result_explainer(state:AgentState) -> AgentState:
+        history = get_history(state.messages)
+
+        state.messages.append(HumanMessage(content=state.user_input))
+
         if not state.results:
-            state.response = (
+            reply  = (
                 f"I couldn't find any properties matching these filters:\n"
                 f"{state.extracted_filters}\n"
                 "You may want to relax price, structure, or availability."
             )
+            state.response = reply
+
+            state.messages.append(AIMessage(content=reply))
+
             return state
 
         clean_results = format_results_for_llm(state.results)
@@ -49,9 +60,15 @@ def make_result_explainer(llm):
         Extracted results : {clean_results}
         """
 
-        state.response = llm.invoke(
+        reply = llm.invoke(
             user=user_prompt,
-            system=RESULT_EXPLAINER_SYSTEM
+            system=RESULT_EXPLAINER_SYSTEM,
+            history=history
         )
+
+        state.messages.append(AIMessage(content=reply))
+
+        state.response = reply
+
         return state
     return result_explainer

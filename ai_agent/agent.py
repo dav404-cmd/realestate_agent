@@ -1,6 +1,6 @@
 from ai_agent.agent_runtime import AgentRuntime
 
-runtime  = AgentRuntime(openrouter=True)
+runtime  = AgentRuntime(openrouter=False)
 
 def real_estate_agent(message:str,thread_id:str):
     final_state = runtime.agent.invoke(
@@ -10,6 +10,9 @@ def real_estate_agent(message:str,thread_id:str):
     return final_state["response"]
 
 if __name__ == "__main__":
-    user_input = "i want to buy a house of around 15739655 yen , with wood structure that is vacant"
-    response = real_estate_agent(user_input,"nox_1")
-    print(response)
+    while True:
+        user_input = input("you : ")
+        if user_input == "bye":
+            break
+        response = real_estate_agent(user_input,"nox_1")
+        print(f"ai : {response}")
