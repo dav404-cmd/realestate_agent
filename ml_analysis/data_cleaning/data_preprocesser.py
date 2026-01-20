@@ -18,8 +18,22 @@ class DataPreprocess:
     @staticmethod
     def drop_difficult(df) -> pd.DataFrame:
         # Useful data currently unusable due to high non value.
-        df = df.drop(columns = ["gross_yield","floor_area_ratio","building_area_ratio",
-                                "balcony_size","land_area","potential_annual_rent","investment_situation"])
+        df = df.drop(columns = ["potential_annual_rent","investment_situation"])
+        return df
+
+    SPARSE_NUMERIC = [
+        "gross_yield",
+        "floor_area_ratio",
+        "building_area_ratio",
+        "balcony_size",
+        "land_area"
+    ]
+
+    @staticmethod
+    def handle_sparse_numeric(df):
+        for col in DataPreprocess.SPARSE_NUMERIC:
+            if col in df.columns:
+                df[f"{col}_missing"] = df[col].isna().astype(int)
         return df
 
     @staticmethod
@@ -28,17 +42,6 @@ class DataPreprocess:
         parts = df["location"].str.split(",",expand = True)
         df["prefecture"] = parts[2].str.strip()
         df = df.drop(columns=["location"])
-        return df
-
-    @staticmethod
-    def clean_onehot_encoding(df) -> pd.DataFrame:
-        df = df.join(pd.get_dummies(df["prefecture"], prefix="prefecture").astype(int)).drop("prefecture", axis=1)
-        df = df.join(pd.get_dummies(df["land_rights"], prefix="land_rights").astype(int)).drop("land_rights", axis=1)
-        df = df.join(pd.get_dummies(df["occupancy"], prefix="occ").astype(int)).drop("occupancy", axis=1)
-        df = df.join(pd.get_dummies(df["structure"], prefix="structure").astype(int)).drop("structure", axis=1)
-        df = df.join(pd.get_dummies(df["zoning"], prefix="zoning").astype(int)).drop("zoning", axis=1)
-        df = df.join(pd.get_dummies(df["transaction_type"], prefix="transaction").astype(int)).drop("transaction_type",axis=1)
-        df = df.join(pd.get_dummies(df["type"], prefix="type").astype(int)).drop("type", axis=1)
         return df
 
     @staticmethod
@@ -59,10 +62,6 @@ class DataPreprocess:
         df["has_kitchen"] = df["layout"].str.contains("K", case=False).astype(int)
         df["has_storage"] = df["layout"].str.contains(r"S(?!TUDIO)", case=False).astype(int)
 
-        # 4. Studio / R-type detection (1R, R, SR)
-        r_pattern = r"(^1R$)|(^R$)|(^SR$)|(\b1R\b)|(\bR\b)"
-        is_r_type = df["layout"].str.contains(r_pattern, case=False)
-
         # 5. Fill missing rooms for whole buildings with NaN (can't infer)
         df.loc[df["is_whole_building"] == 1, "rooms"] = np.nan
 
@@ -70,38 +69,60 @@ class DataPreprocess:
 
         return df
 
+    DIR_ANGLE = {
+        "NORTH": 0,
+        "NORTHEAST": 45,
+        "EAST": 90,
+        "SOUTHEAST": 135,
+        "SOUTH": 180,
+        "SOUTHWEST": 225,
+        "WEST": 270,
+        "NORTHWEST": 315
+    }
+
     @staticmethod
-    def clean_direction(df) -> pd.DataFrame:
-        valid_dirs = {
-            "NORTH", "SOUTH", "EAST", "WEST",
-            "NORTHEAST", "NORTHWEST",
-            "SOUTHEAST", "SOUTHWEST"
-        }
-        def get_valid_dirs(d):
-            if pd.isna(d):
+    def clean_direction(df):
+        def parse_dirs(s):
+            if pd.isna(s):
                 return []
-            parts = [p.strip().upper() for p in d.split(",")]
-            return [p for p in parts if p in valid_dirs]
+            parts = [p.strip().upper() for p in s.split(",")]
+            return [p for p in parts if p in DataPreprocess.DIR_ANGLE]
 
-        df["direction_list"] = df["direction_facing"].apply(get_valid_dirs)
+        df["dir_list"] = df["direction_facing"].apply(parse_dirs)
 
-        for d in valid_dirs:
-            df[f"dir_{d}"] = df["direction_list"].apply(lambda lst: int(d in lst))
+        df["num_directions"] = df["dir_list"].apply(len)
 
-        df = df.drop(columns = ["direction_facing","direction_list"])
+        def avg_angle(dirs):
+            if not dirs:
+                return np.nan
+            return np.mean([DataPreprocess.DIR_ANGLE[d] for d in dirs])
 
-        return df
+        df["avg_direction_angle"] = df["dir_list"].apply(avg_angle)
+
+        df["has_south_exposure"] = df["dir_list"].apply(
+            lambda d: int(any(x in ["SOUTH", "SOUTHEAST", "SOUTHWEST"] for x in d))
+        )
+
+        return df.drop(columns=["direction_facing", "dir_list"])
 
     @staticmethod
     def clean_repair_reserve(df) -> pd.DataFrame:
         df["repair_reserve_fund"] = (
-            df["repair_reserve_fund"].
-            fillna("").astype(str).str
-            .replace(r"/D","",regex = True).replace("",None)
-            .pipe(pd.to_numeric,errors = "coerce")
+            df["repair_reserve_fund"]
+            .astype(str)
+            .str.replace(r"\D", "", regex=True)
+            .replace("", pd.NA)
         )
-        return df
 
+        df["repair_reserve_fund"] = pd.to_numeric(
+            df["repair_reserve_fund"], errors="coerce"
+        )
+
+        df["repair_reserve_fund_missing"] = (
+            df["repair_reserve_fund"].isna().astype("int8")
+        )
+
+        return df
     @staticmethod
     def clean_dates(df) -> pd.DataFrame:
         current_year = datetime.now().year
@@ -132,49 +153,44 @@ class DataPreprocess:
     def clean_ns_station(df):
         def parse_station(s):
             if pd.isna(s):
-                return pd.Series([None, None, None, None])
+                return pd.Series([None, None])
 
-            # Regex to capture: Station name, minutes, mode, line
-            match = re.match(r"^(.*?) Station \((\d+) min\. (.*?)\) (.*)$", s)
+            match = re.match(r"^(.*?) Station \((\d+) min", s)
             if match:
-                station_name = match.group(1).strip()
-                minutes = int(match.group(2))
-                mode = match.group(3).strip()
-                line = match.group(4).strip()
-                return pd.Series([station_name, minutes, mode, line])
-            else:
-                return pd.Series([s, None, None, None])  # fallback
+                return pd.Series([match.group(1), int(match.group(2))])
+            return pd.Series([s, None])
 
-        df[['ns_station_name', 'ns_minutes', 'ns_mode', 'ns_line']] = df['nearest_station'].apply(parse_station)
+        df[["ns_station_name", "ns_minutes"]] = df["nearest_station"].apply(parse_station)
 
-        # Top 10 stations
-        top10_stations = df['ns_station_name'].value_counts().nlargest(10).index
-        df['ns_station_name_reduced'] = df['ns_station_name'].where(df['ns_station_name'].isin(top10_stations), 'Other')
+        df["ns_minutes_missing"] = df["ns_minutes"].isna().astype(int)
 
-        # Top 10 lines
-        top10_lines = df['ns_line'].value_counts().nlargest(10).index
-        df['ns_line_reduced'] = df['ns_line'].where(df['ns_line'].isin(top10_lines), 'Other')
+        top10_stations = df["ns_station_name"].value_counts().nlargest(10).index
+        df["ns_station_name"] = df["ns_station_name"].where(df["ns_station_name"].isin(top10_stations),"Other")
 
-        df = df.drop(columns=['nearest_station','ns_station_name','ns_minutes','ns_mode','ns_line'])
+        return df.drop(columns=["nearest_station"])
 
-        return df
 
     @staticmethod
     def format_columns(df):
         df.columns = df.columns.str.replace(" ", "_")
         return df
 
-    def run_preprocessor(self,df):
-        df = self.drop_unnecessary(df)
-        df = self.drop_difficult(df)
-        df = self.split_location(df)
-        df = self.clean_onehot_encoding(df)
-        df = self.clean_dates(df)
-        df = self.clean_layout(df)
-        df = self.clean_direction(df)
-        df = self.clean_ns_station(df)
-        df = self.format_columns(df)
 
+    PIPELINE = [
+        drop_unnecessary,
+        drop_difficult,
+        handle_sparse_numeric,
+        split_location,
+        clean_repair_reserve,
+        clean_dates,
+        clean_layout,
+        clean_direction,
+        clean_ns_station,
+        format_columns
+    ]
+    def run_preprocessor(self,df):
+        for step in self.PIPELINE:
+            df = step(df)
         return df
 
 
