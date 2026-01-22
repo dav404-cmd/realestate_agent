@@ -4,7 +4,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error,r2_score, mean_squared_error
+
 from sklearn.ensemble import HistGradientBoostingRegressor
+from lightgbm import LGBMRegressor,early_stopping,log_evaluation
+
+import shap
 
 from ml_analysis.data_cleaning.data_preprocesser import DataPreprocess
 from manage_db.db_manager import DbManager
@@ -48,35 +52,64 @@ preprocessor = ColumnTransformer(
     ]
 )
 
+
+
 #model pipeline
-model = HistGradientBoostingRegressor(
-    max_depth=6,
-    learning_rate=0.05,
-    max_iter=300,
-    random_state=42
-)
 
-pipe = Pipeline(steps=[
-    ("preprocess",preprocessor),
-    ("model",model)
-])
+def get_split_data():
+    #Train and evaluate
+    x = df.drop(columns=[target])
+    y = df[target]
 
-#Train and evaluate
-x = df.drop(columns=[target])
-y = df[target]
+    return train_test_split(x,y,test_size=0.2,random_state=42)
 
-X_train,X_test,y_train,y_test = train_test_split(x,y,test_size=0.2,random_state=42)
+def get_pipe(model):
+    return Pipeline(steps=[
+        ("preprocess",preprocessor),
+        ("model",model)
+    ])
 
-pipe.fit(X_train,y_train)
+def perform_prediction(model):
+    pipe = get_pipe(model)
+    X_train, X_test, y_train, y_test = get_split_data()
 
-preds = pipe.predict(X_test)
+    pipe.fit(X_train, y_train)
 
-mae = mean_absolute_error(y_test, preds)
-mse = mean_squared_error(y_test,preds)
-r2 = r2_score(y_test, preds)
+    preds = pipe.predict(X_test)
 
+    mae = mean_absolute_error(y_test, preds)
+    mse = mean_squared_error(y_test, preds)
+    r2 = r2_score(y_test, preds)
 
+    print(f"MAE: ¥{mae:,.0f}")
+    print(f"MSE: ¥{mse:,.0f}")
+    print(f"R2: {r2:.4f}")
 
-print(f"MAE: ¥{mae:,.0f}")
-print(f"MSE: ¥{mse:,.0f}")
-print(f"R2: {r2:.4f}")
+class Models:
+
+    def __init__(self):
+        self.learning_rate = 0.05
+        self.random_state = 42
+
+    def lgb_r(self):
+        return LGBMRegressor(
+        n_estimators=2000,
+        learning_rate=self.learning_rate,
+        num_leaves=31,
+        max_depth=-1,
+        random_state=self.random_state,
+        n_jobs=-1,
+    )
+    def hgb_r(self):
+        return HistGradientBoostingRegressor(
+        max_depth=6,
+        learning_rate=self.learning_rate,
+        max_iter=300,
+        random_state=self.random_state
+    )
+
+if __name__ == "__main__":
+    models = Models()
+    lbg_r = models.lgb_r()
+    hgb_r = models.hgb_r()
+    perform_prediction(lbg_r)

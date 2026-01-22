@@ -1,6 +1,6 @@
 from ai_agent.agent_runtime import AgentRuntime
 
-runtime  = AgentRuntime(openrouter=True)
+runtime  = AgentRuntime(openrouter=False)
 
 def real_estate_agent(message:str,thread_id:str):
     final_state = runtime.agent.invoke(
