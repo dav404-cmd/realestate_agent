@@ -1,48 +1,70 @@
 from ai_agent.state import AgentState
 import json
+from manage_db.db_manager import DbManager
 
 #for test
 from ai_agent.llm_wrappers import BytezLLM
-from ai_agent.nodes.info_loader import make_load_profile
-from manage_db.db_manager import DbManager
+
+
+db = DbManager(table_name="jp_realestate")
+df = db.load_data()
+
+CANONICAL = {
+  "zoning": ["Residential", "Commercial"],
+  "structure": ["Wood", "Steel","Reinforced Concrete"],
+  "occupancy": ["Vacant", "Occupied"]
+}
+
+NUMERIC_PROFILE = {
+  "price": {
+    "min": df["price_yen"].min(),
+    "max": df["price_yen"].max()
+  },
+  "size": {
+    "min": df["size"].min(),
+    "max": df["size"].max()
+  }
+}
+
+
 
 QUERY_BUILDER_SYSTEM = """
 You extract structured property search filters from user input.
 
-You are given a database profile describing valid columns, ranges,
-and example categorical values.
+You are given a context of valid options and format choose filers in the according format or closest matching option.
 
 
 Rules:
-- Extract ONLY what the user EXPLICITLY says
-- DO NOT infer, guess, or expand ranges
+- Extract only user-stated constraints in natural language form
+- Choose the closest matching value from each list.
 - If user gives only a minimum or maximum, return the other as null
-- Use values exactly as spoken if possible
+- If a field is not mentioned, return it as null
 - Return ONLY valid JSON
-- Use null if information is missing
 - Do NOT explain
 
 
 Allowed fields:
-- structure
 - max_price
 - min_price
 - min_size
 - max_size
 - zoning
-- property_type
+- structure
 - occupancy
 """
 
+
 def make_query_builder(llm):
     def query_builder(state:AgentState) -> AgentState:
-        if not state.db_profile:
-            state.extracted_filters = {}
-            return state
+
+        llm_context = {
+                  "categorical_limited": CANONICAL,
+                  "numeric_bounds": NUMERIC_PROFILE,
+                    }
 
         user_prompt = f"""
         User Input : {state.user_input}
-        Database profile : {json.dumps(state.db_profile,indent=2)}"""
+        Context : {llm_context}"""
 
         raw = llm.invoke(
             system=QUERY_BUILDER_SYSTEM,
@@ -59,15 +81,13 @@ def make_query_builder(llm):
     return query_builder
 
 if __name__ == "__main__":
-    db = DbManager(table_name="jp_realestate")
-    df = db.load_data()
     state = AgentState(
         user_input="i want to buy a house of within 100 mil to 200 mil yen , with steel structure that is vacant",
         intent="property_search",
     )
-    loader = make_load_profile(df)
-    profile = loader(state)
     llm = BytezLLM("Qwen/Qwen3-4B-Instruct-2507")
-    query_builder_ = make_query_builder(llm)
-    state1 = query_builder_(profile)
-    print(state1.extracted_filters)
+
+    query_maker = make_query_builder(llm)
+    query = query_maker(state)
+
+    print(query.extracted_filters)
