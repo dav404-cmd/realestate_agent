@@ -11,7 +11,7 @@ df = db.load_data()
 
 CANONICAL = {
   "zoning": ["Residential", "Commercial"],
-  "structure": ["Wood", "Steel","Reinforced Concrete"],
+  "structure": ["Wood", "Steel Frame","Reinforced Concrete"],
   "occupancy": ["Vacant", "Occupied"]
 }
 
@@ -26,6 +26,9 @@ NUMERIC_PROFILE = {
   }
 }
 
+CATEGORICAL_FORMAT = {
+    "prefecture" : "Free text, example : tokyo",
+}
 
 
 QUERY_BUILDER_SYSTEM = """
@@ -51,6 +54,7 @@ Allowed fields:
 - zoning
 - structure
 - occupancy
+- prefecture 
 """
 
 
@@ -58,9 +62,10 @@ def make_query_builder(llm):
     def query_builder(state:AgentState) -> AgentState:
 
         llm_context = {
-                  "categorical_limited": CANONICAL,
-                  "numeric_bounds": NUMERIC_PROFILE,
-                    }
+                "categorical_limited": CANONICAL,
+                "numeric_bounds": NUMERIC_PROFILE,
+                "categorical_format" : CATEGORICAL_FORMAT
+                }
 
         user_prompt = f"""
         User Input : {state.user_input}
@@ -82,7 +87,7 @@ def make_query_builder(llm):
 
 if __name__ == "__main__":
     state = AgentState(
-        user_input="i want to buy a house of within 100 mil to 200 mil yen , with steel structure that is vacant",
+        user_input="i want to buy a house of within 100 mil to 200 mil yen , with steel structure that is vacant in Kanagawa,Minato-ku",
         intent="property_search",
     )
     llm = BytezLLM("Qwen/Qwen3-4B-Instruct-2507")

@@ -38,7 +38,9 @@ class PropertyQuery(BaseModel):
     zoning: Optional[str] = None
     structure: Optional[str] = None
     occupancy: Optional[str] = None
-    nearest_station: Optional[str] = None
+    prefecture : Optional[str] = None
+    city : Optional[str] = None
+    district : Optional[str] = None
     limit: int = 20
     sort_by: str = "price_yen"
     sort_order: str = "asc"
@@ -67,8 +69,14 @@ def query_properties(df: pd.DataFrame, q: PropertyQuery) -> pd.DataFrame:
     if q.occupancy:
         result = result[result["occupancy"].str.contains(q.occupancy, case=False, na=False)]
 
-    if q.nearest_station:
-        result = result[result["nearest_station"].str.contains(q.nearest_station, case=False, na=False)]
+    if q.prefecture:
+        result = result[result["prefecture"].str.contains(q.prefecture, case=False, na=False)]
+
+    if q.city:
+        result = result[result["city"].str.contains(q.city, case = False, na = False)]
+
+    if q.district:
+        result = result[result["district"].str.contains(q.district, case = False, na = False)]
 
     ascending = q.sort_order == "asc"
     result = result.sort_values(q.sort_by, ascending=ascending)
@@ -82,8 +90,7 @@ if __name__ == "__main__":
     q = PropertyQuery(
         max_price=400_000_000,
         min_size=80,
-        zoning="Residential",
-        nearest_station="Hiroo"
+        zoning="Residential"
     )
 
     results = query_properties(df, q)

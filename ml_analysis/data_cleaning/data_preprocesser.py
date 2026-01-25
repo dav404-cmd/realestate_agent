@@ -12,7 +12,9 @@ class DataPreprocess:
     def drop_unnecessary(df) -> pd.DataFrame:
         df = df.drop(columns=["id","source","scraped_at","building_description","building_name","date_updated",
                                         "unit_number","unit_summary","url","next_update_schedule","landmarks",
-                                        "manager_style","manage_type","other_expenses","sell_situation","road_width"])
+                                        "manager_style","manage_type","other_expenses","sell_situation","road_width",
+                                        "city","district"
+                              ])
         return df
 
     @staticmethod
@@ -34,14 +36,6 @@ class DataPreprocess:
         for col in DataPreprocess.SPARSE_NUMERIC:
             if col in df.columns:
                 df[f"{col}_missing"] = df[col].isna().astype(int)
-        return df
-
-    @staticmethod
-    def split_location(df) -> pd.DataFrame:
-        df["location"] = df["location"].fillna("")
-        parts = df["location"].str.split(",",expand = True)
-        df["prefecture"] = parts[2].str.strip()
-        df = df.drop(columns=["location"])
         return df
 
     @staticmethod
@@ -180,7 +174,6 @@ class DataPreprocess:
         drop_unnecessary,
         drop_difficult,
         handle_sparse_numeric,
-        split_location,
         clean_repair_reserve,
         clean_dates,
         clean_layout,

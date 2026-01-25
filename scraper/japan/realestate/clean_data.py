@@ -292,6 +292,15 @@ def make_df_structurally_safe(df: pd.DataFrame) -> pd.DataFrame:
         df = df.drop(columns=["clean_parking", "parking"])
         df["parking_cost_mth"] = df["parking_cost_mth"].fillna(0)
 
+    if "location" in df.columns:
+        df["location"] = df["location"].fillna("")
+        parts = df["location"].str.split(",",expand = True)
+        df["district"] = parts[0].str.strip()
+        df["city"] = parts[1].str.strip()
+        df["prefecture"] = parts[2].str.strip()
+
+        df = df.drop(columns = ["location"])
+
     return df
 
 if __name__ == "__main__":
