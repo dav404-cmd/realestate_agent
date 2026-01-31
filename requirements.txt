@@ -16,3 +16,5 @@ langgraph
 langchain_core
 pytest
 pytest-asyncio
+
+streamlit
