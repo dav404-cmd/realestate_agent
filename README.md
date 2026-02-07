@@ -13,6 +13,8 @@ matching properties and receive alerts.
 - Agent-based querying (LLM)
 - Basic deal matching logic
 - Ml analysis prototype 
+- Streamlit frontend (prototype for actual Svelte frontend)
+- Fastapi for data querying
 
 ## Planned Features
 - Data extraction(multi-source)
@@ -23,8 +25,9 @@ matching properties and receive alerts.
 - Ranking / ML-based recommendations
 
 ## Tech Stack
-Python, PostgreSQL, Docker, Airflow, LLMs(Bytez api), Svelte
+Python, PostgreSQL, Docker, Airflow, LLMs(Bytez api), Svelte, Fastapi
 
 ## Status
 This project is under active development. Architecture and features
 may change.
+
