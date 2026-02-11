@@ -41,6 +41,25 @@ def search(q: PropertyQuery):
         api_log.exception("Search failed")
         return {"error": str(e)}
 
+@app.get("/property/{property_id}")
+def get_property(property_id:int):
+    api_log.info(f"Received request for id : {property_id}")
+    try:
+        if app.state.df is None:
+            return {"error":"Data not loaded"}
+
+        property_data = app.state.df[app.state.df['id'] == property_id]
+        if property_data.empty:
+            return {"error": "property not found"}
+
+        # Take the first row, convert to dict, then sanitize
+        safe_record = df_to_json_safe_records(property_data.iloc[[0]])[0]
+        return jsonable_encoder(safe_record)
+
+
+    except Exception as e:
+        api_log.exception("Search failed")
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     #__test__
