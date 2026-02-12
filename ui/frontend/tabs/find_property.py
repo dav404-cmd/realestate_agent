@@ -46,7 +46,7 @@ def render():
 
 
     # DETAIL VIEW
-    #todo: format the details ignoring unwanted info
+
     if st.session_state.selected_property is not None:
 
         st.header("Property Details")
@@ -55,8 +55,33 @@ def render():
             f"http://127.0.0.1:8000/property/{st.session_state.selected_property}"
         ).json()
 
+        ignore_detail = ["id", "source", "scraped_at"]
+        prioritized_detail = [
+            "prefecture", "city", "district", "available_from",
+            "layout", "type", "total_floors", "unit_floors"
+        ]
+        main_detail = ["price_yen","url"]
+
+        # Main info
+        st.subheader("Main Info")
+        for k in main_detail:
+            if k in detail and detail[k] is not None:
+                st.write(f"**{k.replace('_', ' ').title()}**: {detail[k]}")
+
+        st.divider()
+
+        # Prioritized info
+        st.subheader("Key Details")
+        for k in prioritized_detail:
+            if k in detail and detail[k] is not None:
+                st.write(f"**{k.replace('_', ' ').title()}**: {detail[k]}")
+
+        st.divider()
+
+        # Other info
+        st.subheader("Other Details")
         for k, v in detail.items():
-            if v is not None:
+            if k not in ignore_detail + prioritized_detail + main_detail and v is not None:
                 st.write(f"**{k.replace('_', ' ').title()}**: {v}")
 
         if st.button("Back"):
