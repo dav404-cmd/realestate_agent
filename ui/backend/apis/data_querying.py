@@ -58,8 +58,23 @@ def get_property(property_id:int):
 
 
     except Exception as e:
-        api_log.exception("Search failed")
+        api_log.exception("Get property failed")
         return {"error": str(e)}
+
+@app.get("/options/{column_name}")
+def get_options(column_name:str):
+    api_log.info(f"Received options request for column : {column_name}")
+    try:
+        if app.state.df is None:
+            return {"error":"Data not loaded"}
+
+        options = app.state.df[column_name].unique().tolist()
+
+        return {column_name:options}
+
+    except Exception as e:
+        api_log.exception("Get options failed")
+        return {"error":str(e)}
 
 if __name__ == "__main__":
     #__test__

@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-import json
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.append(str(ROOT))
@@ -9,6 +8,7 @@ import streamlit as st
 import requests
 from manage_db.query import PropertyQuery
 
+# ___ MAKES CARDS ___
 def property_card(p):
     with st.container(border=True):
         cols = st.columns([3, 1])
@@ -34,7 +34,18 @@ def property_card(p):
             if st.button("View", key=f"view_{p['id']}"):
                 st.session_state.selected_property = p["id"]
 
+# ___ LOADS PREREQUISITE INFO IN SESSION ___
+def load_choices(col_name: str):
+    key = f"{col_name}_options"
+    if key not in st.session_state:
+        try:
+            response = requests.get(f"http://127.0.0.1:8000/options/{col_name}").json()
+            st.session_state[key] = response.get(col_name, [])
+        except Exception as e:
+            st.error(f"Failed to load {col_name} options: {e}")
+            st.session_state[key] = []
 
+# ___ MAIN INTERFACE ___
 def render():
 
     # STATE INITIALIZATION FIRST
@@ -44,6 +55,8 @@ def render():
     if "selected_property" not in st.session_state:
         st.session_state.selected_property = None
 
+    # Load choices for querying
+    load_choices("prefecture")
 
     # DETAIL VIEW
 
@@ -99,7 +112,7 @@ def render():
 
     prefecture = st.selectbox(
         "Prefecture",
-        (None, "Tokyo", "Kanagawa"),
+        [None] + st.session_state.prefecture_options,
         key="prefecture_find"
     )
 
