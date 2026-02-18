@@ -39,10 +39,22 @@ class DbManager:
                 id SERIAL PRIMARY KEY,
                 source TEXT,
                 scraped_at TIMESTAMP DEFAULT NOW(),
+                status TEXT,
                 data JSONB
             );
         """).format(table=sql.Identifier(self.table_name))
         self.cursor.execute(query)
+
+        # Create a unique index on the JSON 'url' field
+        index_query = sql.SQL("""
+            CREATE UNIQUE INDEX IF NOT EXISTS {index_name}
+            ON {table} ((data ->> 'url'));
+         """).format(
+            index_name=sql.Identifier(f"idx_unique_url_{self.table_name}"),
+            table=sql.Identifier(self.table_name)
+        )
+        self.cursor.execute(index_query)
+
         self.conn.commit()
         db_log.info(f"created table : {self.table_name}")
 
@@ -156,4 +168,24 @@ class DbManager:
         """
         self.cursor.execute(query)
         return [row["table_name"] for row in self.cursor.fetchall()]
+
+    def get_id_by_url(self,url:str):
+        query = sql.SQL("""
+        SELECT id 
+        FROM {table}
+        WHERE data ->> 'url' = %s
+        """).format(table=sql.Identifier(self.table_name))
+
+        self.cursor.execute(query,(url,))
+        result = self.cursor.fetchone()
+        return result["id"] if result else None
+
+    def update_status(self,listing_id:int, status: str):
+        query = sql.SQL("""
+        UPDATE {table}
+        SET status = %s
+        WHERE id = %s 
+        """).format(table= sql.Identifier(self.table_name))
+        self.cursor.execute(query,(status,listing_id))
+        self.conn.commit()
 
