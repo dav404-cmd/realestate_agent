@@ -13,7 +13,7 @@ class DataPreprocess:
         df = df.drop(columns=["id","source","scraped_at","building_description","building_name","date_updated",
                                         "unit_number","unit_summary","url","next_update_schedule","landmarks",
                                         "manager_style","manage_type","other_expenses","sell_situation","road_width",
-                                        "city","district"
+                                        "city","district","status"
                               ])
         return df
 
@@ -189,7 +189,7 @@ class DataPreprocess:
 
 if __name__ == "__main__":
     db = DbManager("jp_realestate")
-    df1 = db.load_data()
+    df1 = db.load_data(include_expired=True)
     cleaner = DataPreprocess()
     df1 = cleaner.run_preprocessor(df1)
     print(df1.info())

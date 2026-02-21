@@ -133,22 +133,31 @@ class DbManager:
                     pass
         return df
 
-    def load_data(self):
-        query = f"""
-            SELECT id, source, scraped_at, j.key, j.value
+    def load_data(self,include_expired = False):
+        base_query = f"""
+            SELECT id, source, scraped_at, status, j.key, j.value
             FROM {self.table_name}
-            CROSS JOIN LATERAL jsonb_each_text(data) AS j(key, value);
+            CROSS JOIN LATERAL jsonb_each_text(data) AS j(key, value)
         """
+
+        if not include_expired:
+            query = base_query + " WHERE status = 'active';"
+        else:
+            query = base_query + ";"
+
         engine = self.get_db_engine()
         df_long = pd.read_sql(query, engine)
 
         # Pivot to wide format
         df = df_long.pivot_table(
-            index=["id", "source", "scraped_at"],
+            index=["id", "source", "scraped_at","status"],
             columns="key",
             values="value",
             aggfunc="first"
         ).reset_index()
+
+        # Cleanup: remove the name of the 'columns' axis created by pivot
+        df.columns.name = None
 
         df = self.auto_cast_numeric(df)
 
@@ -179,6 +188,31 @@ class DbManager:
         self.cursor.execute(query,(url,))
         result = self.cursor.fetchone()
         return result["id"] if result else None
+
+    def get_url_by_id(self,id:int):
+        query = sql.SQL("""
+        SELECT data ->> 'url'
+        FROM {table}
+        WHERE id = %s
+        """).format(table = sql.Identifier(self.table_name))
+
+        self.cursor.execute(query,(id,))
+        result = self.cursor.fetchone()
+        return result["url"] if result else None
+
+    def get_active_urls(self):
+        query = f"""
+            SELECT 
+                id,
+                data->>'url' AS url
+            FROM {self.table_name}
+            WHERE status = 'active';
+        """
+
+        engine = self.get_db_engine()
+        df = pd.read_sql(query, engine)
+
+        return df
 
     def update_status(self,listing_id:int, status: str):
         query = sql.SQL("""

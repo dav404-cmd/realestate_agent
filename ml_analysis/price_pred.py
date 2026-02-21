@@ -17,7 +17,7 @@ from manage_db.db_manager import DbManager
 db = DbManager("jp_realestate")
 cleaner = DataPreprocess()
 
-df = db.load_data()
+df = db.load_data(include_expired=True)
 df = cleaner.run_preprocessor(df)
 
 #feature setup
