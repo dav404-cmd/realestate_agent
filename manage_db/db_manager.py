@@ -39,7 +39,8 @@ class DbManager:
                 id SERIAL PRIMARY KEY,
                 source TEXT,
                 scraped_at TIMESTAMP DEFAULT NOW(),
-                status TEXT,
+                last_update TIMESTAMP DEFAULT NOW(),
+                status TEXT DEFAULT 'active',
                 data JSONB
             );
         """).format(table=sql.Identifier(self.table_name))
@@ -206,7 +207,8 @@ class DbManager:
                 id,
                 data->>'url' AS url
             FROM {self.table_name}
-            WHERE status = 'active';
+            WHERE status = 'active' 
+            AND last_update < NOW() - INTERVAL '3 days';
         """
 
         engine = self.get_db_engine()
@@ -222,4 +224,32 @@ class DbManager:
         """).format(table= sql.Identifier(self.table_name))
         self.cursor.execute(query,(status,listing_id))
         self.conn.commit()
+
+    def update_last_update(self,listing_id:int):
+        query = sql.SQL("""
+        UPDATE {table}
+        SET last_update = CURRENT_TIMESTAMP
+        WHERE id = %s 
+        """).format(table = sql.Identifier(self.table_name))
+        self.cursor.execute(query,(listing_id,))
+        self.conn.commit()
+
+
+    # one time
+    def add_last_updated(self):
+        query = sql.SQL("""
+        ALTER TABLE {table} 
+        ADD COLUMN last_update TIMESTAMP;
+        """).format(table = sql.Identifier(self.table_name))
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def update_last_updated(self):
+        query = sql.SQL("""
+        UPDATE {table}
+        SET last_update = scraped_at; 
+        """).format(table = sql.Identifier(self.table_name))
+        self.cursor.execute(query)
+        self.conn.commit()
+        db_log.info("updated complete")
 

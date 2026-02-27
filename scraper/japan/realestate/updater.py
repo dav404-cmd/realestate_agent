@@ -11,11 +11,11 @@ res_updater = get_logger("RealEstateUpdater")
 db = DbManager(table_name="jp_realestate")
 
 class UpdateRealEstate(BaseScraper):
-    async def update_card(self,urls,start_browser = True):
+    async def update_card(self,listing_ids,urls,start_browser = True):
         if start_browser:
             await self.start_browser()
 
-        async def handle_update(url,index):
+        async def handle_update(listing_id,url,index):
             page = await self.context.new_page()
 
             try:
@@ -23,7 +23,6 @@ class UpdateRealEstate(BaseScraper):
                 await page.goto(url,timeout=15000,wait_until="domcontentloaded")
                 res_updater.info(f"{index} Opened url : {url}")
 
-                listing_id = db.get_id_by_url(url)
                 if listing_id is None:
                     res_updater.warning(f"{index} No db entry found for {url}")
                     return
@@ -35,6 +34,8 @@ class UpdateRealEstate(BaseScraper):
                 else:
                     db.update_status(listing_id, "active")
 
+                db.update_last_update(listing_id)
+
             except Exception as e:
                 res_updater.exception(f"Error during update:{e}")
 
@@ -43,12 +44,13 @@ class UpdateRealEstate(BaseScraper):
 
         sem = asyncio.Semaphore(5)
 
-        async def limit_task(i , url):
+        async def limit_task(i, listing_id, url):
             async with sem:
-                await handle_update(url,i)
+                await handle_update(listing_id=listing_id, url=url, index=i)
 
-        await asyncio.gather(*(limit_task(i,url) for i,url in enumerate(urls)))
-
+        await asyncio.gather(
+            *(limit_task(i, listing_id, url) for i, (listing_id, url) in enumerate(zip(listing_ids, urls)))
+        )
 
         if start_browser:
             db.close_conn()
@@ -63,14 +65,16 @@ class UpdateRealEstate(BaseScraper):
                 res_updater.info("Starting update cycle")
 
                 df = db.get_active_urls()
+
+                listing_ids = df["id"].tolist()
                 urls = df["url"].tolist()
 
-                if not urls:
+                if not listing_ids or not urls:
                     res_updater.warning("No active listing found")
                     await asyncio.sleep(interval_sec)
                     continue
 
-                await self.update_card(urls, start_browser=False)
+                await self.update_card(listing_ids,urls, start_browser=False)
 
                 res_updater.info("Update cycle completed.")
                 await asyncio.sleep(interval_sec)
