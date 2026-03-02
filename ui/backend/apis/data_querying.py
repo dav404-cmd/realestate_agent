@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi import APIRouter
+from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
@@ -10,6 +12,7 @@ from data.data_cleaner.to_json_safe import df_to_json_safe_records
 
 from utils.logger import get_logger
 
+router = APIRouter()
 api_log = get_logger("API_log")
 
 @asynccontextmanager
@@ -26,29 +29,21 @@ async def lifespan(app:FastAPI):
     api_log.info("Application shutdown complete")
 
 
-app = FastAPI(lifespan=lifespan)
-
-
-@app.post("/search")
-def search(q: PropertyQuery):
+@router.post("/search")
+def search(q: PropertyQuery,request : Request):
     api_log.info(f"Received query: {q}")
     try:
-        if app.state.df is None:
-            return {"error":"Data not loaded"}
-        results = query_properties(app.state.df,q)
+        results = query_properties(request.app.state.df,q)
         return jsonable_encoder(df_to_json_safe_records(results))
     except Exception as e:
         api_log.exception("Search failed")
         return {"error": str(e)}
 
-@app.get("/property/{property_id}")
-def get_property(property_id:int):
+@router.get("/property/{property_id}")
+def get_property(property_id:int,request : Request):
     api_log.info(f"Received request for id : {property_id}")
     try:
-        if app.state.df is None:
-            return {"error":"Data not loaded"}
-
-        property_data = app.state.df[app.state.df['id'] == property_id]
+        property_data = request.app.state.df[request.app.state.df['id'] == property_id]
         if property_data.empty:
             return {"error": "property not found"}
 
@@ -61,14 +56,11 @@ def get_property(property_id:int):
         api_log.exception("Get property failed")
         return {"error": str(e)}
 
-@app.get("/options/{column_name}")
-def get_options(column_name:str):
+@router.get("/options/{column_name}")
+def get_options(column_name:str,request : Request):
     api_log.info(f"Received options request for column : {column_name}")
     try:
-        if app.state.df is None:
-            return {"error":"Data not loaded"}
-
-        options = app.state.df[column_name].unique().tolist()
+        options = request.app.state.df[column_name].unique().tolist()
 
         return {column_name:options}
 
