@@ -17,4 +17,7 @@ langchain_core
 pytest
 pytest-asyncio
 
+Authlib
+python-jose
+itsdangerous
 streamlit

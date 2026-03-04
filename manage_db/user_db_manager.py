@@ -7,8 +7,6 @@ import os
 
 load_dotenv()
 
-# manages userdb and user_pref
-
 class UserDbManager:
     def __init__(self):
         self.conn = psycopg2.connect(
@@ -46,15 +44,15 @@ class UserDbManager:
     def create_table_user_pref(self):
         pass
 
-    def insert_user(self,email,gmail_sub):
+    def insert_user(self,email,google_sub):
         query = """
-        INSERT INTO userdb (email,gmail_sub)
+        INSERT INTO users (email,google_sub)
         VALUES (%s,%s)
-        ON CONFLICT (gmail_sub)
+        ON CONFLICT (google_sub)
         DO UPDATE SET email = EXCLUDED.email
         RETURNING id;
         """
-        self.cursor.execute(query,(email,gmail_sub))
+        self.cursor.execute(query,(email,google_sub))
         user_id = self.cursor.fetchone()["id"]
         self.conn.commit()
         if user_id:
