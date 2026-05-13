@@ -68,7 +68,7 @@ async def auth_callback(request:Request):
 
     jwt_token = create_jwt(str(user_id))
 
-    response = RedirectResponse("/") # the front page url
+    response = RedirectResponse("http://localhost:8501/") # the front page url
     response.set_cookie(
         key="session",
         value= jwt_token,

@@ -8,7 +8,7 @@ class AgentRuntime:
 
     def __init__(self, openrouter=False):
         if openrouter:
-            llm = OpenRouterLLM("deepseek/deepseek-r1-0528:free")
+            llm = OpenRouterLLM("openrouter/owl-alpha")
             key = "openrouter"
         else:
             llm = BytezLLM("Qwen/Qwen3-4B-Instruct-2507")

@@ -8,6 +8,9 @@ import streamlit as st
 import requests
 from manage_db.query import PropertyQuery
 
+# __ url __
+query_url = "http://127.0.0.1:8000/query"
+
 # ___ MAKES CARDS ___
 def property_card(p):
     with st.container(border=True):
@@ -39,7 +42,7 @@ def load_choices(col_name: str):
     key = f"{col_name}_options"
     if key not in st.session_state:
         try:
-            response = requests.get(f"http://127.0.0.1:8000/query/options/{col_name}").json()
+            response = requests.get(f"{query_url}/options/{col_name}").json()
             st.session_state[key] = response.get(col_name, [])
         except Exception as e:
             st.error(f"Failed to load {col_name} options: {e}")
@@ -65,7 +68,7 @@ def render():
         st.header("Property Details")
 
         detail = requests.get(
-            f"http://127.0.0.1:8000/query/property/{st.session_state.selected_property}"
+            f"{query_url}/property/{st.session_state.selected_property}"
         ).json()
 
         ignore_detail = ["id", "source", "scraped_at"]
@@ -126,7 +129,7 @@ def render():
         payload = query.model_dump(exclude_none=True)
 
         response = requests.post(
-            "http://127.0.0.1:8000/query/search",
+            f"{query_url}/search",
             json=payload
         )
 
