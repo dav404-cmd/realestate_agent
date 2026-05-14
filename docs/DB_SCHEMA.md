@@ -45,8 +45,18 @@ which is expected to change due to performance issues and add complexity .
 *Others*
 "date_updated","unit_number","unit_summary","url","next_update_schedule","landmarks","manager_style","manage_type","other_expenses","sell_situation","road_width","city","district", *etc*
 
-#### Unique Constraints
+#### Unique Index
 - `data->>'url'` should remain unique to avoid duplicate listings
+
+### status
+Stores the status of listings .
+
+**Values** : active , expired 
+
+### last_update
+Stores date when the listing was last updated by updater .
+
+**default** : scraped_at
 
 ## users.
 This database contains the login data of users .
