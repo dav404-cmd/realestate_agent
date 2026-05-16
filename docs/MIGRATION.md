@@ -98,7 +98,7 @@ WHERE status = 'active';
 
 ## Migration Status Checklist
 
-- [ ] Create new table
+- [x] Create new table
 - [ ] Implement schema
 - [ ] Create and run migration tests
 - [ ] Migrate existing data
