@@ -14,15 +14,18 @@ class RealestateScraperLogic(BaseScraper):
 
     @staticmethod
     async def make_url(ids : list,session_seen_id : set) -> list:
-        urls = []
+        listings = []
         for id in ids:
             if id not in session_seen_id:
-                url = f"https://realestate.co.jp/en/forsale/view/{id}"
-                urls.append(url)
+                listings.append({
+                    "listing_id" : id,
+                    "url" : f"https://realestate.co.jp/en/forsale/view/{id}"
+                })
+
                 session_seen_id.add(id)
             else:
                 res_log.info(f"auto ignored {id}")
-        return urls
+        return listings
 
 
     async def get_cards_id(self,url):
@@ -42,17 +45,20 @@ class RealestateScraperLogic(BaseScraper):
         res_log.info("found ids")
         return ids
 
-    async def collect_data(self, urls):
+    async def collect_data(self,ids:list,session_seen_id:set):
+        listing = await self.make_url(ids,session_seen_id)
 
         scraped_results = []
 
-        async def handle_page(url, index):
+        async def handle_page(item, index):
             page = await self.context.new_page()
 
             async def page_closer():
                 await page.close()
 
             try:
+                url = item['url']
+                listing_id = item['listing_id']
                 await page.goto(url, timeout=30000, wait_until="domcontentloaded")
                 res_log.info(f"[{index}] Opened: {url}")
 
@@ -60,7 +66,7 @@ class RealestateScraperLogic(BaseScraper):
                 data = await extract_data(page, page_closer)
 
                 if data:
-                    data["url"] = url
+                    data["source_listing_id"] = listing_id
                     scraped_results.append(data)
                 else:
                     res_log.warning(f"[{index}] No data extracted: {url}")
@@ -75,11 +81,11 @@ class RealestateScraperLogic(BaseScraper):
         # Limit concurrency (to avoid hitting the site too hard)
         sem = asyncio.Semaphore(5)
 
-        async def limited_task(i, url):
+        async def limited_task(i, item):
             async with sem:
-                await handle_page(url, i)
+                await handle_page(item, i )
 
-        await asyncio.gather(*(limited_task(i, url) for i, url in enumerate(urls)))
+        await asyncio.gather(*(limited_task(i, item) for i, item in enumerate(listing)))
 
         res_log.info(f"* Done scraping {len(scraped_results)} pages.")
         clean_scraped_results = clean_all_listings(scraped_results)
