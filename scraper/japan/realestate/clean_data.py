@@ -115,11 +115,17 @@ def try_parse_percentage(s):
 
 def parse_floor(value):
     if not value:
-        return (None, None)
+        return {
+            "unit_floor": None,
+            "total_floors" : None
+        }
 
     # Already structured
     if isinstance(value, (list, tuple)) and len(value) == 2:
-        return int(value[0]), int(value[1])
+        return {
+            "unit_floor": int(value[0]),
+            "total_floors": int(value[1])
+        }
 
     # If string looks like "[29, 43]" → parse it
     if isinstance(value, str):
@@ -128,7 +134,9 @@ def parse_floor(value):
             try:
                 lst = ast.literal_eval(value)
                 if isinstance(lst, (list, tuple)) and len(lst) == 2:
-                    return int(lst[0]), int(lst[1])
+                    return {
+                        "unit_floor": int(lst[0]),
+                        "total_floors": int(lst[1])}
             except:
                 pass
 
@@ -136,23 +144,88 @@ def parse_floor(value):
         import re
         match = re.match(r"(\d+)\s*/\s*(\d+)F", value)
         if match:
-            return int(match.group(1)), int(match.group(2))
+            return {
+                "unit_floor": int(match.group(1)),
+                "total_floors": int(match.group(2))}
 
-    return (None, None)
+    return {
+            "unit_floor": None,
+            "total_floors" : None
+        }
 
 def parse_floors(value):
     if not value:
-        return None
+        return {
+            "unit_floor": None,
+            "total_floors" : None
+        }
     value = str(value).strip()
 
     # Case: "3F" (simple single floor)
     match = re.match(r"(\d+)F", value)
     if match:
-        unit_floor = int(match.group(1))
-        return unit_floor
+        return {
+            "unit_floor": None,
+            "total_floors" : int(match.group(1))
+        }
 
-    return None
+    return {
+            "unit_floor": None,
+            "total_floors" : None
+        }
 
+def parse_location(value):
+    if not value:
+        return {
+            "district" : None,
+            "city" : None,
+            "prefecture" : None
+        }
+    parts = value.split(",")
+    if len(parts)==3:
+        return {
+            "district": parts[0].strip(),
+            "city": parts[1].strip(),
+            "prefecture": parts[2].strip()
+        }
+    return {
+        "district": None,
+        "city": None,
+        "prefecture": None
+    }
+
+def parse_nearest_station(value):
+    if not value:
+        return {
+            "ns_name":None,
+            "ns_distance_min":None,
+            "ns_mode":None,
+            "ns_line":None
+        }
+    match = re.match(r"^(.*?) Station \((\d+) min\. ([\w\s]+)\) (.+)$" , value)
+    if match :
+        return {
+            "ns_name": match.group(1),
+            "ns_distance_min": match.group(2),
+            "ns_mode": match.group(3),
+            "ns_line": match.group(4)
+        }
+    return {
+            "ns_name":None,
+            "ns_distance_min":None,
+            "ns_mode":None,
+            "ns_line":None
+        }
+
+def parse_repair_reserve_fund(value):
+    if not value :
+        return None
+    try:
+        num_value = re.sub(r"\D",'',value)
+        return int(num_value)
+    except Exception as e:
+        res_log(f"error cleaning parse_repair_reserve_fund as : {e}")
+        return None
 
 def clean_value(key, value):
     v = clean_text(value)
@@ -207,6 +280,9 @@ def customize_listing(cleaned_dict: dict):
         "next_update_schedule" : normalize_date,
         "floor" : parse_floor,
         "floors": parse_floors,
+        "location" : parse_location,
+        "nearest_station" : parse_nearest_station,
+        "repair_reserve_fund" : parse_repair_reserve_fund,
     }
 
     final = {}
@@ -215,6 +291,11 @@ def customize_listing(cleaned_dict: dict):
 
         if clean_key in TRANSFORM:
             clean_value = TRANSFORM[clean_key](clean_value)
+
+            # Handle dict values (eg:floors)
+            if isinstance(clean_value,dict):
+                final.update(clean_value)
+                continue
 
         # If key is mapped → rename it
         if clean_key in KEY_MAP:
