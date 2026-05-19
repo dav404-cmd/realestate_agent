@@ -79,7 +79,7 @@ class DbManagerV1:
         with self.conn.cursor() as cur:
             for listing in listings:
                 clean_payload = dict(listing)
-                price_yen = clean_payload.pop('price',None)
+                price_yen = clean_payload.pop('price_yen',None)
                 source_listing_id = clean_payload.pop('source_listing_id',None)
 
                 cur.execute(query,[
@@ -91,3 +91,12 @@ class DbManagerV1:
                     ids.append(result[0])
             self.conn.commit()
         return ids
+
+    def delete_all(self):
+        query = sql.SQL("""
+        DELETE FROM {table};
+        """).format(table = sql.Identifier(self.table_name))
+        with self.conn.cursor() as cur:
+            cur.execute(query)
+            self.conn.commit()
+        print(f"deleted all data form {self.table_name}")

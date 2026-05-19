@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import math
+import json
+from datetime import datetime
+
 def df_to_json_safe_records(df: pd.DataFrame):
     records = []
 
@@ -22,3 +25,12 @@ def df_to_json_safe_records(df: pd.DataFrame):
         records.append(clean_row)
 
     return records
+
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()  # e.g. "2026-05-19T14:31:00"
+        return super().default(obj)
+

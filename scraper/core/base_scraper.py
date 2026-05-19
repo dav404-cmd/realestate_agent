@@ -6,6 +6,7 @@ import pandas as pd
 import os
 
 from manage_db.db_manager import DbManager
+from manage_db.db_manager_v1 import DbManagerV1
 
 # the base script for scrapers.
 
@@ -103,6 +104,12 @@ class BaseScraper:
         db.close_conn()
         return ids
 
+    @staticmethod
+    def store_db_v1(table_name : str , source : str , dic_list):
+        db = DbManagerV1(table_name,source)
+        ids = db.insert_data(dic_list)
+        print(f"Inserted {len(ids)} new rows into {table_name}, skipped {len(dic_list) - len(ids)} duplicates.")
+        return ids
 
 
 
