@@ -100,7 +100,7 @@ WHERE status = 'active';
 
 - [x] Create new table
 - [x] Implement schema
-- [ ] Create and run migration tests
-- [ ] Migrate existing data
+- [x] Create and run migration tests
+- [x] Migrate existing data
 - [ ] Update application systems
 - [ ] Deploy and validate
