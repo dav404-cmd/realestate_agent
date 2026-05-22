@@ -1,3 +1,4 @@
+
 from manage_db.db_manager import DbManager
 from manage_db.db_manager_v1 import DbManagerV1
 import re
@@ -7,6 +8,9 @@ from psycopg2.extras import RealDictCursor
 
 from data.data_cleaner.to_json_safe import DateTimeEncoder
 
+from scraper.japan.realestate.clean_data import (parse_repair_reserve_fund,
+                                                 parse_location,parse_nearest_station)
+import ast
 
 class MigrateDb:
     def __init__(self):
@@ -49,6 +53,83 @@ class MigrateDb:
 
         return data
 
+    @staticmethod
+    def parse_floor(value):
+        """
+        "floor": [
+            21,
+            21
+        ]
+        """
+
+        if not value:
+            return {
+                "unit_floor": None,
+                "total_floors": None
+            }
+
+        # Already structured
+        if isinstance(value, (list, tuple)) and len(value) == 2:
+            return {
+                "unit_floor": value[0],
+                "total_floors": value[1]
+            }
+
+        # If string looks like "[29, 43]" → parse it
+        if isinstance(value, str):
+            value = value.strip()
+            if value.startswith("[") and value.endswith("]"):
+                try:
+                    lst = ast.literal_eval(value)
+                    if isinstance(lst, (list, tuple)) and len(lst) == 2:
+                        return {
+                            "unit_floor": int(lst[0]),
+                            "total_floors": int(lst[1])}
+                except:
+                    pass
+
+        return {
+            "unit_floor": None,
+            "total_floors": None
+        }
+
+    @staticmethod
+    def parse_floors(value):
+        #  "floors": 3
+        if not value:
+            return {
+                "unit_floor": None,
+                "total_floors": None
+            }
+
+        return {
+            "unit_floor": None,
+            "total_floors": int(value)
+        }
+
+    def transform_data(self,payload : dict):
+        transform  = {
+            "floor" : self.parse_floor,
+            "floors": self.parse_floors,
+            "location" : parse_location,
+            "nearest_station" : parse_nearest_station,
+            "repair_reserve_fund" : parse_repair_reserve_fund,
+        }
+        final = {}
+
+        for clean_key,clean_value in payload.items():
+            if clean_key in transform:
+
+                clean_value = transform[clean_key](clean_value)
+
+                if isinstance(clean_value,dict):
+                    final.update(clean_value)
+                    continue
+
+            final[clean_key] = clean_value
+
+        return final
+
     def clean_existing_data(self):
         rows = self.load_existing_data()
         cleaned_data = []
@@ -56,11 +137,13 @@ class MigrateDb:
         for row in rows:
             payload = self.get_source_listing_id(dict(row["data"]))
 
+            clean_payload = self.transform_data(payload)
+
             cleaned_data.append({
             "scraped_at": row["scraped_at"],
             "status": row["status"],
             "last_update": row["last_update"],
-            "data": payload
+            "data": clean_payload
             })
 
 
@@ -77,6 +160,7 @@ class MigrateDb:
                 RETURNING id;
                 """
 
+        index = 1
         ids = []
         conn = self.db1.conn
 
@@ -98,6 +182,10 @@ class MigrateDb:
                 result = cur.fetchone()
                 if result:
                     ids.append(result[0])
+                index += 1
+                if index % 1000 == 0:
+                    print(f"stored {index} listing ")
+
         conn.commit()
         conn.close()
         return ids

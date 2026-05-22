@@ -100,3 +100,12 @@ class DbManagerV1:
             cur.execute(query)
             self.conn.commit()
         print(f"deleted all data form {self.table_name}")
+
+    def reset_table(self):
+        query = sql.SQL("""
+        TRUNCATE TABLE {table} RESTART IDENTITY;
+        """).format(table = sql.Identifier(self.table_name))
+        with self.conn.cursor() as cur:
+            cur.execute(query)
+            self.conn.commit()
+        print(f"Reset {self.table_name}")
