@@ -4,6 +4,9 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2 import sql
 
+from sqlalchemy import create_engine
+import pandas as pd
+
 from dotenv import load_dotenv
 import os
 
@@ -101,6 +104,23 @@ class DbManagerV1:
             self.conn.commit()
         print(f"deleted all data form {self.table_name}")
 
+    @staticmethod
+    def get_db_engine():
+        dbname = os.getenv("DB_NAME")
+        user = os.getenv("DB_USER")
+        password = os.getenv("DB_PASSWORD")
+        host = os.getenv("DB_HOST")
+        port = os.getenv("DB_PORT")
+
+        engine = create_engine(f"postgresql://{user}:{password}@{host}:{port}/{dbname}")
+        try :
+            with engine.connect() as conn:
+                pass
+        except Exception as e:
+            print(f"Connection with engine failed , error : {e}")
+
+        return engine
+
     def reset_table(self):
         query = sql.SQL("""
         TRUNCATE TABLE {table} RESTART IDENTITY;
@@ -109,3 +129,34 @@ class DbManagerV1:
             cur.execute(query)
             self.conn.commit()
         print(f"Reset {self.table_name}")
+
+    def get_active_ids(self):
+        query = f"""
+        SELECT id,source_listing_id 
+        FROM {self.table_name}
+        WHERE status = 'active'
+        AND last_update < NOW() - INTERVAL '3 days';
+        """
+
+        engine = self.get_db_engine()
+        df = pd.read_sql(query,engine)
+
+        return df
+
+    def update_status(self,listing_id:int , status : str):
+        query = sql.SQL("""
+        UPDATE {table}
+        SET status  = %s
+        WHERE id = %s; 
+        """).format(table = sql.Identifier(self.table_name))
+        self.cursor.execute(query,(status,listing_id))
+        self.conn.commit()
+
+    def update_last_update(self,listing_id:int):
+        query = sql.SQL("""
+        UPDATE {table}
+        SET last_update = CURRENT_TIMESTAMP
+        WHERE id = %s;
+        """).format(table = sql.Identifier(self.table_name))
+        self.cursor.execute(query,(listing_id,))
+        self.conn.commit()

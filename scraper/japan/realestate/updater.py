@@ -2,13 +2,13 @@ import asyncio
 
 from scraper.japan.realestate.xpaths import EXPIRED
 from scraper.core.base_scraper import BaseScraper
-from manage_db.db_manager import DbManager
+from manage_db.db_manager_v1 import DbManagerV1
 
 from utils.logger import get_logger
 
 res_updater = get_logger("RealEstateUpdater")
 
-db = DbManager(table_name="jp_realestate")
+db = DbManagerV1(table_name="jp_realestate_v1")
 
 class UpdateRealEstate(BaseScraper):
     async def update_card(self,listing_ids,urls,start_browser = True):
@@ -64,10 +64,13 @@ class UpdateRealEstate(BaseScraper):
             while True:
                 res_updater.info("Starting update cycle")
 
-                df = db.get_active_urls()
+                df = db.get_active_ids()
+
+                #make urls
+                df["source_listing_id"] = df["source_listing_id"].apply(lambda ids : f"https://realestate.co.jp/en/forsale/view/{ids}")
 
                 listing_ids = df["id"].tolist()
-                urls = df["url"].tolist()
+                urls = df["source_listing_id"].tolist()
 
                 if not listing_ids or not urls:
                     res_updater.warning("No active listing found")
