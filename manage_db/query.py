@@ -2,7 +2,10 @@ import pandas as pd
 from pydantic import BaseModel
 from typing import Optional, List
 
-from manage_db.db_manager import DbManager
+from psycopg2 import sql
+
+from manage_db.db_manager_v1 import DbManagerV1
+from psycopg2.extras import RealDictCursor
 
 def build_db_profile(df:pd.DataFrame):
     profile = {}
@@ -83,9 +86,87 @@ def query_properties(df: pd.DataFrame, q: PropertyQuery) -> pd.DataFrame:
 
     return result.head(q.limit)
 
+def build_property_query(q : PropertyQuery,table_name : str ):
+    query  = sql.SQL("""
+    SELECT * 
+    FROM {table}
+    WHERE 1 = 1
+    """).format(table = sql.Identifier(table_name))
+
+    params = {}
+
+    if q.min_price is not None:
+        query += sql.SQL(" AND price_yen >= %(min_price)s")
+        params["min_price"] = q.min_price
+
+    if q.max_price is not None:
+        query += sql.SQL(" AND price_yen <= %(max_price)s")
+        params["max_price"] = q.max_price
+
+    if q.min_size is not None:
+        query += sql.SQL(" AND NULLIF(data ->> 'size','')::numeric >= %(min_size)s")
+        params["min_size"] = q.min_size
+
+    if q.max_size is not None:
+        query += sql.SQL(" AND NULLIF(data ->> 'size','')::numeric <= %(max_size)s")
+        params["max_size"] = q.max_size
+
+    if q.prefecture is not None:
+        query += sql.SQL(" AND (data ->> 'prefecture') = %(prefecture)s")
+        params["prefecture"] = q.prefecture
+
+    if q.city is not None:
+        query += sql.SQL(" AND (data ->> 'city') = %(city)s")
+        params["city"] = q.city
+
+    if q.district is not None:
+        query += sql.SQL(" AND (data ->> 'district') = %(district)s")
+        params["district"] = q.district
+
+    if q.zoning is not None:
+        query += sql.SQL(" AND (data ->> 'zoning') = %(zoning)s")
+        params["zoning"] = q.zoning
+
+    if q.structure is not None:
+        query += sql.SQL(" AND (data ->> 'structure') = %(structure)s")
+        params["structure"] = q.structure
+
+    if q.occupancy is not None:
+        query += sql.SQL(" AND (data ->> 'occupancy') = %(occupancy)s")
+        params["occupancy"] = q.occupancy
+
+    allowed_sorts = { #todo:map and use sql to apply null protection
+        "price_yen",
+        "size",
+        "year_built",
+        "date_updated"
+    }
+
+    sort_by = q.sort_by if q.sort_by in allowed_sorts else "last_update"
+    order = "ASC" if q.sort_order == "asc" else "DESC"
+
+    query += sql.SQL(" ORDER BY {} {} LIMIT %(limit)s").format(
+        sql.Identifier(sort_by),
+        sql.SQL(order)
+    )
+    params["limit"] = q.limit
+
+    return query,params
+
+def query_property(q:PropertyQuery,table_name:str , conn):
+
+    query,params  = build_property_query(q , table_name)
+    with conn.cursor(cursor_factory=RealDictCursor) as cur :
+        cur.execute(query,params)
+        data = cur.fetchall()
+
+    return data
+
+
+
 if __name__ == "__main__":
-    db = DbManager(table_name="jp_realestate")
-    df = db.load_data()
+    db = DbManagerV1(table_name="jp_realestate_v1")
+    conn = db.conn
 
     q = PropertyQuery(
         max_price=400_000_000,
@@ -93,16 +174,6 @@ if __name__ == "__main__":
         zoning="Residential"
     )
 
-    results = query_properties(df, q)
+    results = query_property(q,"jp_realestate_v1",conn)
 
-    print(results[[
-        "price_yen",
-        "size",
-        "nearest_station",
-        "zoning",
-        "structure",
-        "url"
-    ]])
-
-    profile = build_db_profile(df)
-    print(profile)
+    print(results)
