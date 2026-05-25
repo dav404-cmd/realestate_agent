@@ -130,19 +130,6 @@ class DbManagerV1:
             self.conn.commit()
         print(f"Reset {self.table_name}")
 
-    def get_active_ids(self):
-        query = f"""
-        SELECT id,source_listing_id 
-        FROM {self.table_name}
-        WHERE status = 'active'
-        AND last_update < NOW() - INTERVAL '3 days';
-        """
-
-        engine = self.get_db_engine()
-        df = pd.read_sql(query,engine)
-
-        return df
-
     def update_status(self,listing_id:int , status : str):
         query = sql.SQL("""
         UPDATE {table}
@@ -160,3 +147,43 @@ class DbManagerV1:
         """).format(table = sql.Identifier(self.table_name))
         self.cursor.execute(query,(listing_id,))
         self.conn.commit()
+
+    # QUERYING FUNCTIONS
+
+    def get_active_ids(self):
+        query = f"""
+        SELECT id,source_listing_id 
+        FROM {self.table_name}
+        WHERE status = 'active'
+        AND last_update < NOW() - INTERVAL '3 days';
+        """
+
+        engine = self.get_db_engine()
+        df = pd.read_sql(query,engine)
+
+        return df
+
+    def get_by_id(self,id_):
+        query = sql.SQL("""
+        SELECT *
+        FROM {table}
+        WHERE id = %s
+        """).format(table = sql.Identifier(self.table_name))
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query,(id_,))
+            listing = cur.fetchone()
+
+        return listing
+
+    def get_options(self,column_name):
+        query = sql.SQL("""
+        SELECT DISTINCT data ->> %s AS value 
+        FROM {table}
+        WHERE data ->> %s IS NOT NULL
+        AND data ->> %s != ''
+        ORDER BY value 
+        """).format(table = sql.Identifier(self.table_name))
+        with self.conn.cursor() as cur:
+            cur.execute(query,(column_name,column_name,column_name))
+            rows = cur.fetchall()
+        return rows

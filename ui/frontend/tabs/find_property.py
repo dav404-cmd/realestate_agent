@@ -13,24 +13,42 @@ query_url = "http://127.0.0.1:8000/query"
 
 # ___ MAKES CARDS ___
 def property_card(p):
+
+    data = p.get("data",{})
     with st.container(border=True):
         cols = st.columns([3, 1])
 
         # LEFT SIDE (main info)
         with cols[0]:
-            st.subheader(f"{p['type'] if p['type'] else 'Type unspecified'} • {p['layout'] if p['layout'] else 'Layout unspecified'}")
+            type_layout = (
+                f"{data.get('type') or 'Type unspecified'} • "
+                f"{data.get('layout') or 'Layout unspecified'}"
+            )
+            st.subheader(type_layout)
 
-            location = f"{p['district']}, {p['city']}, {p['prefecture']}"
+            location = (
+                f"{data.get('prefecture','')} ,"
+                f"{data.get('district','')} ,"
+                f"{data.get('city','')}"
+            )
             st.write(location)
 
             st.write(f"Price: {p['price_yen']:,} yen")
-            st.write(f"📐 {p['size']} m² | Land: {p['land_area']} m²")
-            st.write(f"Built: {p['construction_completed']}")
-            st.write(f"🚉 {p['nearest_station']}")
-            st.write(f"Prefecture : {p['prefecture']}")
+            st.write(
+                f"📐 {data.get('size','')} m² | "
+                f"Land: {data.get('land_area','')} m²"
+            )
+            st.write(f"Built: {data.get('construction_completed','')}")
+            st.write(
+                f"🚉 Nearest station :  "
+                f"{data.get('ns_name','')} | "
+                f"{data.get('ns_line','')} | "
+                f"{data.get('ns_distance_min','')} min , "
+                f"{data.get('ns_mode','')}"
+            )
 
-            if p["occupancy"]:
-                st.write(f"Status: {p['occupancy']}")
+            if data.get("occupancy"):
+                st.write(f"Status: {data.get('occupancy')}")
 
         # RIGHT SIDE (action)
         with cols[1]:
@@ -38,14 +56,14 @@ def property_card(p):
                 st.session_state.selected_property = p["id"]
 
 # ___ LOADS PREREQUISITE INFO IN SESSION ___
-def load_choices(col_name: str):
-    key = f"{col_name}_options"
+def load_choices(column_name: str):
+    key = f"{column_name}_options"
     if key not in st.session_state:
         try:
-            response = requests.get(f"{query_url}/options/{col_name}").json()
-            st.session_state[key] = response.get(col_name, [])
+            response = requests.get(f"{query_url}/options/{column_name}").json()
+            st.session_state[key] = response.get("options", [])
         except Exception as e:
-            st.error(f"Failed to load {col_name} options: {e}")
+            st.error(f"Failed to load {column_name} options: {e}")
             st.session_state[key] = []
 
 # ___ MAIN INTERFACE ___
@@ -71,32 +89,37 @@ def render():
             f"{query_url}/property/{st.session_state.selected_property}"
         ).json()
 
-        ignore_detail = ["id", "source", "scraped_at"]
+        detail_data = detail.get("data",{})
+
+        ignore_detail = ["id", "source", "scraped_at","source_listing_id"]
         prioritized_detail = [
             "prefecture", "city", "district", "available_from",
             "layout", "type", "total_floors", "unit_floors"
         ]
-        main_detail = ["price_yen","url"]
+        main_detail = ["price_yen", "url"]
+        local_status = ["status","last_update"]
 
-        # Main info
-        st.subheader("Main Info")
-        for k in main_detail:
-            if k in detail and detail[k] is not None:
-                st.write(f"**{k.replace('_', ' ').title()}**: {detail[k]}")
+        # Main detail .
+        st.write(f"**Price yen**: {detail['price_yen']}")
+        st.write(f"**View listing**: https://realestate.co.jp/en/forsale/view/{detail['source_listing_id']}") #todo: build a get_url func to get url based on source and id.
 
         st.divider()
 
         # Prioritized info
         st.subheader("Key Details")
         for k in prioritized_detail:
+            if k in detail_data and detail_data.get(k) is not None:
+                st.write(f"**{k.replace('_', ' ').title()}**: {detail_data.get(k,'')}")
+
+        for k in local_status:
             if k in detail and detail[k] is not None:
-                st.write(f"**{k.replace('_', ' ').title()}**: {detail[k]}")
+                st.write(f"**{k.replace('_', ' ').title()}**: {detail.get(k,'')}")
 
         st.divider()
 
         # Other info
         st.subheader("Other Details")
-        for k, v in detail.items():
+        for k, v in detail_data.items():
             if k not in ignore_detail + prioritized_detail + main_detail and v is not None:
                 st.write(f"**{k.replace('_', ' ').title()}**: {v}")
 
