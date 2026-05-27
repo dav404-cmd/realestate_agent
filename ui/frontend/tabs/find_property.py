@@ -7,6 +7,7 @@ sys.path.append(str(ROOT))
 import streamlit as st
 import requests
 from manage_db.query import PropertyQuery
+from data.data_cleaner.get_url import get_url
 
 # __ url __
 query_url = "http://127.0.0.1:8000/query"
@@ -101,7 +102,8 @@ def render():
 
         # Main detail .
         st.write(f"**Price yen**: {detail['price_yen']}")
-        st.write(f"**View listing**: https://realestate.co.jp/en/forsale/view/{detail['source_listing_id']}") #todo: build a get_url func to get url based on source and id.
+        url = get_url(detail["source_listing_id)"],detail["source"])
+        st.write(f"**View listing**: {url}") #todo: Test.
 
         st.divider()
 

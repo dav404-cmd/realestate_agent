@@ -187,3 +187,35 @@ class DbManagerV1:
             cur.execute(query,(column_name,column_name,column_name))
             rows = cur.fetchall()
         return rows
+
+    def get_numeric_range(self,column_name):
+        query = sql.SQL("""
+        SELECT 
+        MIN({col}) AS min_value,
+        MAX({col}) AS max_value
+        FROM {table}
+        """).format(
+            col = sql.Identifier(column_name),
+            table = sql.Identifier(self.table_name)
+        )
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur :
+            cur.execute(query)
+            result = cur.fetchone()
+
+        return result
+
+    def get_json_numeric_range(self, key):
+        query = sql.SQL("""
+        SELECT
+        MIN(NULLIF(data ->> %s, '')::numeric) AS min_value,
+        MAX(NULLIF(data ->> %s, '')::numeric) AS max_value
+        FROM {table}
+        """).format(
+            table=sql.Identifier(self.table_name)
+        )
+
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, (key, key))
+            result = cur.fetchone()
+
+        return result

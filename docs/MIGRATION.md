@@ -75,12 +75,12 @@ WHERE status = 'active';
 
 ## Affected Systems 
 
-- [ ] ai_agent/(nodes/search_executor.py ; agent_runtime.py)
-- [ ] manage_db/
+- [x] ai_agent/(nodes/search_executor.py ; agent_runtime.py)
+- [x] manage_db/
 - [ ] ml_analysis/
 - [x] scraper/ (cleaning,inserting process)
 - [ ] tests/
-- [ ] ui/backend/apis/data_querying.py
+- [x] ui/backend/apis/data_querying.py
 
 ---
 

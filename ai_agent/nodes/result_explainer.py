@@ -19,21 +19,24 @@ Mention trade-offs and limitations.
 Help the user decide.
 """
 
+#todo: Present data in formate with logic
 def format_results_for_llm(results):
     formatted = []
     for r in results[:5]:  # limit
+        r_data = r.get("data",{})
         formatted.append({
+            "id" : r.get("id"),
             "price": r.get("price_yen"),
-            "type" : r.get("type"),
-            "structure": r.get("structure"),
-            "occupancy": r.get("occupancy"),
-            "prefecture": r.get("prefecture"),
-            "city" : r.get("city"),
-            "district" : r.get("district"),
-            "layout" : r.get("layout"),
-            "land_area": r.get("land_area"),
-            "building_area_ratio" : r.get("building_area_ratio"),
-            "url": r.get("url"),
+            "type" : r_data.get("type")  or "Unknown",
+            "structure": r_data.get("structure")  or "Unknown",
+            "occupancy": r_data.get("occupancy")  or "Unknown",
+            "prefecture": r_data.get("prefecture")  or "Unknown",
+            "city" : r_data.get("city")  or "Unknown",
+            "district" : r_data.get("district")  or "Unknown",
+            "layout" : r_data.get("layout")  or "Unknown",
+            "land_area": r_data.get("land_area")  or "Unknown",
+            "building_area_ratio" : r_data.get("building_area_ratio")  or "Unknown",
+            "url": f"https://realestate.co.jp/en/forsale/view/{r.get('source_listing_id')}", #todo: use and test get_url
         })
     return formatted
 

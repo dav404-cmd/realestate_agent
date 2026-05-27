@@ -9,13 +9,13 @@ from ai_agent.nodes.search_executor import make_search_executor
 from ai_agent.state import AgentState
 
 
-def build_graph(llm,df):
+def build_graph(llm,conn,table_name):
     graph = StateGraph(AgentState)
 
     graph.add_node("intent",make_intent_router(llm))
     graph.add_node("casual",make_casual_responder(llm))
     graph.add_node("query",make_query_builder(llm))
-    graph.add_node("search",make_search_executor(df))
+    graph.add_node("search",make_search_executor(conn,table_name))
     graph.add_node("explain",make_result_explainer(llm))
 
     graph.set_entry_point("intent")

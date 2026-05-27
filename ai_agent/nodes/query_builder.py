@@ -1,13 +1,13 @@
 from ai_agent.state import AgentState
 import json
-from manage_db.db_manager import DbManager
+from manage_db.db_manager_v1 import DbManagerV1
 
 #for test
-from ai_agent.llm_wrappers import BytezLLM
+from ai_agent.llm_wrappers import OpenRouterLLM
 
 
-db = DbManager(table_name="jp_realestate")
-df = db.load_data()
+db = DbManagerV1(table_name="jp_realestate_v1")
+
 
 CANONICAL = {
   "zoning": ["Residential", "Commercial"],
@@ -16,14 +16,8 @@ CANONICAL = {
 }
 
 NUMERIC_PROFILE = {
-  "price": {
-    "min": df["price_yen"].min(),
-    "max": df["price_yen"].max()
-  },
-  "size": {
-    "min": df["size"].min(),
-    "max": df["size"].max()
-  }
+  "price": db.get_numeric_range("price_yen"),
+  "size": db.get_json_numeric_range("size")
 }
 
 CATEGORICAL_FORMAT = {
@@ -75,11 +69,19 @@ def make_query_builder(llm):
             system=QUERY_BUILDER_SYSTEM,
             user=user_prompt
         )
-
         try:
+            raw = raw.strip()
+
+            if raw.startswith("```"):
+                raw = raw.replace("```json", "")
+                raw = raw.replace("```", "")
+                raw = raw.strip()
+
             state.extracted_filters = json.loads(raw)
-        except json.JSONDecodeError as e:
-            print(f"JSON parse error: {e}")
+
+        except Exception as e:
+            print("RAW:", repr(raw))
+            print("ERROR:", e)
             state.extracted_filters = {}
 
         return state
@@ -90,7 +92,7 @@ if __name__ == "__main__":
         user_input="i want to buy a house of within 100 mil to 200 mil yen , with steel structure that is vacant in Kanagawa,Minato-ku",
         intent="property_search",
     )
-    llm = BytezLLM("Qwen/Qwen3-4B-Instruct-2507")
+    llm = OpenRouterLLM("openrouter/free")
 
     query_maker = make_query_builder(llm)
     query = query_maker(state)
