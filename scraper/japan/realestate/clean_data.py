@@ -331,6 +331,8 @@ def clean_all_listings(data_list):
             res_log.error(f"Cleaning error for item: {e}")
     return cleaned
 
+
+# --legacy code--
 # ---Extra 2nt layer cleaning to make it cleaner and llm friendly while compressed , Used after data storing.
 def make_df_structurally_safe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
@@ -389,6 +391,4 @@ if __name__ == "__main__":
 
     clean_data = clean_all_listings(data_list)
     df = pd.DataFrame(clean_data)
-    norm = make_df_structurally_safe(df)
-    print(norm[['unit_floor','total_floors']])
-    print(type(df.loc[0, "floor"]), df.loc[0, "floor"])
+    print(df)

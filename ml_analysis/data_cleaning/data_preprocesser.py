@@ -3,7 +3,7 @@ import numpy as np
 import re
 from datetime import datetime
 
-from manage_db.db_manager import DbManager
+from legacy.db_manager import DbManager
 
 pd.set_option("display.max_columns", None)
 

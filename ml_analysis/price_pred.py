@@ -6,12 +6,10 @@ from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error,r2_score, mean_squared_error
 
 from sklearn.ensemble import HistGradientBoostingRegressor
-from lightgbm import LGBMRegressor,early_stopping,log_evaluation
-
-import shap
+from lightgbm import LGBMRegressor
 
 from ml_analysis.data_cleaning.data_preprocesser import DataPreprocess
-from manage_db.db_manager import DbManager
+from legacy.db_manager import DbManager
 
 #loading clean data
 db = DbManager("jp_realestate")

@@ -18,8 +18,7 @@ async def test_get_cards(scraper):
 @pytest.mark.asyncio
 async def test_data_extraction(scraper):
     ids = await scraper.get_cards_id("https://realestate.co.jp/en/forsale?page=1")
-    urls = await scraper.make_url(ids, {1297687})
-    data = await scraper.collect_data(urls)
+    data = await scraper.collect_data(ids , {1297687})
     assert isinstance(data, list)
     assert all(isinstance(d, dict) for d in data)
     assert "price_yen" in data[0]

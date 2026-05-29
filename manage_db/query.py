@@ -48,44 +48,6 @@ class PropertyQuery(BaseModel):
     sort_by: str = "price_yen"
     sort_order: str = "asc"
 
-def query_properties(df: pd.DataFrame, q: PropertyQuery) -> pd.DataFrame:
-    result = df.copy()
-
-    if q.min_price is not None:
-        result = result[result["price_yen"] >= q.min_price]
-
-    if q.max_price is not None:
-        result = result[result["price_yen"] <= q.max_price]
-
-    if q.min_size is not None:
-        result = result[result["size"] >= q.min_size]
-
-    if q.max_size is not None:
-        result = result[result["size"] <= q.max_size]
-
-    if q.zoning:
-        result = result[result["zoning"].str.contains(q.zoning, case=False, na=False)]
-
-    if q.structure:
-        result = result[result["structure"].str.contains(q.structure, case=False, na=False)]
-
-    if q.occupancy:
-        result = result[result["occupancy"].str.contains(q.occupancy, case=False, na=False)]
-
-    if q.prefecture:
-        result = result[result["prefecture"].str.contains(q.prefecture, case=False, na=False)]
-
-    if q.city:
-        result = result[result["city"].str.contains(q.city, case = False, na = False)]
-
-    if q.district:
-        result = result[result["district"].str.contains(q.district, case = False, na = False)]
-
-    ascending = q.sort_order == "asc"
-    result = result.sort_values(q.sort_by, ascending=ascending)
-
-    return result.head(q.limit)
-
 def build_property_query(q : PropertyQuery,table_name : str ):
     query  = sql.SQL("""
     SELECT * 

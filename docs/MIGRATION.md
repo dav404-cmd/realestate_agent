@@ -79,7 +79,7 @@ WHERE status = 'active';
 - [x] manage_db/
 - [ ] ml_analysis/
 - [x] scraper/ (cleaning,inserting process)
-- [ ] tests/
+- [x] tests/
 - [x] ui/backend/apis/data_querying.py
 
 ---
@@ -102,5 +102,5 @@ WHERE status = 'active';
 - [x] Implement schema
 - [x] Create and run migration tests
 - [x] Migrate existing data
-- [ ] Update application systems
+- [x] Update application systems
 - [ ] Deploy and validate
