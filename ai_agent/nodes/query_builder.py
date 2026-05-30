@@ -8,7 +8,7 @@ from ai_agent.llm_wrappers import OpenRouterLLM
 
 db = DbManagerV1(table_name="jp_realestate_v1")
 
-
+#todo : integrate with live data from db .
 CANONICAL = {
   "zoning": ["Residential", "Commercial"],
   "structure": ["Wood", "Steel Frame","Reinforced Concrete"],
@@ -39,10 +39,18 @@ Rules:
 - Return ONLY valid JSON
 - Do NOT explain
 
+Price extraction rules:
+- If users specifies a price range (e.g. "between 100M and 200M") use min_price and max_price.
+- If users specifies an approximate price (e.g. "around 100M") use target price.
+- If the user specifies a maximum budget (e.g. "under 100M", "less than 100M", "up to 100M"), populate max_price only.
+- If the user specifies a minimum budget (e.g. "above 100M", "at least 100M"), populate min_price only.
+- Never populate target_price together with min_price or max_price.
+- If target_price is populated, min_price and max_price must be null.
 
 Allowed fields:
 - max_price
 - min_price
+- target_price
 - min_size
 - max_size
 - zoning
@@ -89,10 +97,10 @@ def make_query_builder(llm):
 
 if __name__ == "__main__":
     state = AgentState(
-        user_input="i want to buy a house of within 100 mil to 200 mil yen , with steel structure that is vacant in Kanagawa,Minato-ku",
+        user_input="i want to buy a house of around 150 mil , with steel structure that is vacant in Kanagawa,Minato-ku",
         intent="property_search",
     )
-    llm = OpenRouterLLM("openrouter/free")
+    llm = OpenRouterLLM("openrouter/owl-alpha")
 
     query_maker = make_query_builder(llm)
     query = query_maker(state)

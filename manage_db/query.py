@@ -36,6 +36,7 @@ def build_db_profile(df:pd.DataFrame):
 class PropertyQuery(BaseModel):
     min_price: Optional[int] = None
     max_price: Optional[int] = None
+    target_price : Optional[int] = None
     min_size: Optional[float] = None
     max_size: Optional[float] = None
     zoning: Optional[str] = None
@@ -52,10 +53,11 @@ def build_property_query(q : PropertyQuery,table_name : str ):
     query  = sql.SQL("""
     SELECT * 
     FROM {table}
-    WHERE 1 = 1
+    WHERE status = 'active'
     """).format(table = sql.Identifier(table_name))
 
     params = {}
+    order_clauses = []
 
     if q.min_price is not None:
         query += sql.SQL(" AND price_yen >= %(min_price)s")
@@ -64,6 +66,12 @@ def build_property_query(q : PropertyQuery,table_name : str ):
     if q.max_price is not None:
         query += sql.SQL(" AND price_yen <= %(max_price)s")
         params["max_price"] = q.max_price
+
+    if q.target_price is not None:
+        order_clauses.append(
+            sql.SQL("ABS(price_yen - %(target_price)s)")
+        )
+        params["target_price"] = q.target_price
 
     if q.min_size is not None:
         query += sql.SQL(" AND NULLIF(data ->> 'size','')::numeric >= %(min_size)s")
@@ -101,16 +109,23 @@ def build_property_query(q : PropertyQuery,table_name : str ):
         "price_yen",
         "size",
         "year_built",
-        "date_updated"
+        "last_update"
     }
 
     sort_by = q.sort_by if q.sort_by in allowed_sorts else "last_update"
     order = "ASC" if q.sort_order == "asc" else "DESC"
 
-    query += sql.SQL(" ORDER BY {} {} LIMIT %(limit)s").format(
+    order_clauses.append(
+        sql.SQL("{} {}").format(
         sql.Identifier(sort_by),
         sql.SQL(order)
     )
+    )
+
+    query += sql.SQL(" ORDER BY ")
+    query += sql.SQL(",").join(order_clauses)
+    query += sql.SQL(" LIMIT %(limit)s")
+
     params["limit"] = q.limit
 
     return query,params
