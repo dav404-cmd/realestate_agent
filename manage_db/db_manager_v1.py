@@ -219,3 +219,48 @@ class DbManagerV1:
             result = cur.fetchone()
 
         return result
+
+    # for preprocessing
+
+    @staticmethod
+    def auto_cast_numeric(df):
+        # Exclude base columns that should not be cast
+        exclude = {"id", "source", "scraped_at","price_yen", "source_listing_id","status","last_update"}
+        for col in df.columns:
+            if col not in exclude:
+                try:
+                    df[col] = pd.to_numeric(df[col])
+                except Exception:
+                    pass
+        return df
+
+    def load_data(self, include_expired=False):
+        base_query = f"""
+            SELECT id, source, scraped_at, status , last_update, price_yen, source_listing_id ,j.key, j.value
+            FROM {self.table_name}
+            CROSS JOIN LATERAL jsonb_each_text(data) AS j(key, value)
+        """
+
+        if not include_expired:
+            query = base_query + " WHERE status = 'active';"
+        else:
+            query = base_query + ";"
+
+        engine = self.get_db_engine()
+        df_long = pd.read_sql(query, engine)
+
+        # Pivot to wide format
+        df = df_long.pivot_table(
+            index=["id", "source", "scraped_at", "status","last_update","price_yen","source_listing_id"],
+            columns="key",
+            values="value",
+            aggfunc="first"
+        ).reset_index()
+
+        # Cleanup: remove the name of the 'columns' axis created by pivot
+        df.columns.name = None
+
+        df = self.auto_cast_numeric(df)
+
+
+        return df

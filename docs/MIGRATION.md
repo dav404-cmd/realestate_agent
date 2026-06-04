@@ -77,7 +77,7 @@ WHERE status = 'active';
 
 - [x] ai_agent/(nodes/search_executor.py ; agent_runtime.py)
 - [x] manage_db/
-- [ ] ml_analysis/
+- [x] ml_analysis/
 - [x] scraper/ (cleaning,inserting process)
 - [x] tests/
 - [x] ui/backend/apis/data_querying.py

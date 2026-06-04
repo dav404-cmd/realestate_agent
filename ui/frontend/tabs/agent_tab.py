@@ -24,7 +24,7 @@ def render():
 
     if user_input:
         st.session_state.messages.append({"role":"user","content":user_input})
-        response = real_estate_agent(message= str(user_input),thread_id=st.session_state.thread_id)
+        response,fillers = real_estate_agent(message= str(user_input),thread_id=st.session_state.thread_id)#todo:test this line
         st.session_state.messages.append({"role":"assistant","content":response})
 
     # display chat messages from history on app rerun.

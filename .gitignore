@@ -12,11 +12,14 @@ image/
 
 data/raw
 
-ml_analysis/notebooks
+ml_analysis/notebooks/*
 ml_analysis/notebooks/.ipynb_checkpoints
-ml_analysis/models
+ml_analysis/models/*
 ml_analysis/model
 
 data_extractor
 
 legacy/
+
+!ml_analysis/notebooks/price_pred_v1.ipynb
+!ml_analysis/models/catboost_real_estate.cbm
