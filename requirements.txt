@@ -4,11 +4,8 @@ psycopg2
 python-dotenv
 sqlalchemy
 jupyterlab
-lightgbm
 scikit-learn
 shap
-matplotlib
-seaborn
 pydantic
 fastapi
 uvicorn[standard]
@@ -21,3 +18,9 @@ Authlib
 python-jose
 itsdangerous
 streamlit
+
+matplotlib
+seaborn
+lightgbm
+
+

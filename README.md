@@ -19,7 +19,7 @@ matching properties and receive alerts.
 - **Fast scraper:** Playwright_async based fast multipage scraper with continuous updater.
 - **PostgreSQL storage:** Listing and user data are stored in Supabase.
 - **AI agent:** LangGraph based agent that can chat,query and assist users.
-- **Ml analysis prototype:** Experimental realestate price prediction models.  
+- **Ml analysis :** real estate price prediction catboost model with 90% r2 (dataset : 5611 rows, train/test: 80/20).  
 - **Streamlit frontend:** Prototype for actual Svelte frontend.
 - **Oauth:** Google oauth with fastapi.
 - **Fastapi:** Fastapi endpoints for data querying and oauth.

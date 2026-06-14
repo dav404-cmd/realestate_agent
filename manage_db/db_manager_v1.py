@@ -70,6 +70,7 @@ class DbManagerV1:
         self.conn.commit()
         print(f"Table {self.table_name} has been created.")
 
+    #todo:update last_update if duplicate is found , last_update defaults to scraped_at .
     def insert_data(self,listings): # Stores the data of a page at once
         query = sql.SQL("""
         INSERT INTO {table} (price_yen,source_listing_id,source,data)
