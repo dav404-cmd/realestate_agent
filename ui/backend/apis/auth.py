@@ -77,7 +77,8 @@ async def auth_callback(request:Request):
         key="rea_auth",
         value= jwt_token,
         httponly=True,
-        samesite="lax"
+        samesite="lax",
+        max_age= 60*60*24*7
     )
     return response
 

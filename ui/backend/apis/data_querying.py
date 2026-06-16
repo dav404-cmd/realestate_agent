@@ -6,6 +6,8 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from manage_db.db_manager_v1 import DbManagerV1
+from ai_agent.agent_runtime import AgentRuntime
+
 from manage_db.query import PropertyQuery ,query_property
 
 from utils.logger import get_logger
@@ -19,7 +21,15 @@ async def lifespan(app:FastAPI):
 
     app.state.db = db
 
-    api_log.info(f"Database connected . Application started.")
+    api_log.info("Database connected.")
+
+    app.state.agent_runtime = AgentRuntime(
+        db.conn,
+        openrouter=True
+    )
+
+    api_log.info("AgentRuntime loaded.")
+    api_log.info("Application started")
 
     yield
 

@@ -1,6 +1,8 @@
 from ai_agent.agent_runtime import AgentRuntime
+from manage_db.db_manager_v1 import DbManagerV1
 
-runtime  = AgentRuntime(openrouter=True)
+db = DbManagerV1("jp_realestate_v1")
+runtime  = AgentRuntime(db.conn,openrouter=True)
 
 def real_estate_agent(message:str,thread_id:str):
     final_state = runtime.agent.invoke(

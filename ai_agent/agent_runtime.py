@@ -1,12 +1,11 @@
 from ai_agent.agent_graph import build_graph
 from ai_agent.llm_wrappers import BytezLLM,OpenRouterLLM
-from manage_db.db_manager_v1 import DbManagerV1
 
 class AgentRuntime:
     _conn = None
     _agents = {}
 
-    def __init__(self, openrouter=False):
+    def __init__(self, conn, openrouter=False):
         if openrouter:
             llm = OpenRouterLLM("openrouter/owl-alpha")
             key = "openrouter"
@@ -15,8 +14,7 @@ class AgentRuntime:
             key = "bytez"
 
         if AgentRuntime._conn is None:
-            db = DbManagerV1("jp_realestate_v1")
-            AgentRuntime._conn = db.conn
+            AgentRuntime._conn = conn
 
         if key not in AgentRuntime._agents:
             AgentRuntime._agents[key] = build_graph(
