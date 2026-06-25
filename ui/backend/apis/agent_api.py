@@ -15,6 +15,7 @@ def chat_agent(
     request: Request,
     body: ChatRequest
 ):
+    api_log.info(f"Request received for agent. ms : {body.message},thread_id : {body.thread_id}")
     try:
         runtime = request.app.state.agent_runtime
 
@@ -26,6 +27,7 @@ def chat_agent(
                 }
             }
         )
+        api_log.info(f"Response : {final_state.get('response')},thread_id : {body.thread_id}")
 
         return {
             "response": final_state.get("response")
