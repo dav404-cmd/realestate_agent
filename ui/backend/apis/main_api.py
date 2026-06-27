@@ -3,6 +3,7 @@ from ui.backend.apis.data_querying import lifespan
 from ui.backend.apis.data_querying import router as query_router
 from ui.backend.apis.auth import router as auth_router
 from ui.backend.apis.agent_api import router as agent_router
+from ui.backend.apis.user_pref_api import router as pref_router
 
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -28,3 +29,4 @@ app.add_middleware(
 app.include_router(query_router,prefix="/query")
 app.include_router(auth_router,prefix="/auth")
 app.include_router(agent_router,prefix="/agent")
+app.include_router(pref_router,prefix="/pref")

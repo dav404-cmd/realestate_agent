@@ -1,7 +1,5 @@
 import psycopg2
-from annotated_types.test_cases import cases
 from psycopg2.extras import RealDictCursor,Json
-from psycopg2 import sql
 
 from dotenv import load_dotenv
 import os
@@ -146,9 +144,14 @@ class UserPreference:
         INSERT INTO user_preference
         ({columns})
         VALUES ({placeholders})
+        RETURNING id
         """
         self.cursor.execute(query,values)
+        _id = self.cursor.fetchone()["id"]
         self.conn.commit()
+        if _id:
+            return _id
+        return None
 
 
     def update_pref(self, new_pref: Preference, user_id: str):
@@ -172,8 +175,9 @@ class UserPreference:
 
         query = f"""
         UPDATE user_preference
-        SET {set_clause}
+        SET {set_clause} , updated_at = NOW()
         WHERE user_id = %s
+        RETURNING id
         """
 
         self.cursor.execute(query, values)
@@ -181,8 +185,20 @@ class UserPreference:
             raise ValueError(
                 f"No preference found for user {user_id}"
             )
-
+        _id = self.cursor.fetchone()["id"]
         self.conn.commit()
+        if _id :
+            return _id
+        return None
+
+    def get_pref(self,user_id : str):
+        query = """
+        SELECT * FROM user_preference 
+        WHERE user_id = %s 
+        """
+        self.cursor.execute(query,(user_id,))
+        prefs = self.cursor.fetchone()
+        return prefs
 
 if __name__ == "__main__":
     db = UserPreference()
@@ -198,5 +214,6 @@ if __name__ == "__main__":
             "max_price" : 2
         }
     )
-    db.update_pref(test_pref,"dbb2b64d-4080-4294-963b-c3cd0178b6c8")
+    data = db.get_pref("dbb2b64d-4080-4294-963b-c3cd0178b6c8")
+    print(data)
     db.close_conn()
