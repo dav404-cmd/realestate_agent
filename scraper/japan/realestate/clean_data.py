@@ -35,9 +35,12 @@ def normalize_dict_keys(d: dict) -> dict:
     return clean
 
 
-def clean_text(value: str) -> str:
+def clean_text(value: str):
     if value is None:
         return None
+
+    if not isinstance(value, str):
+        return value
 
     # Remove only ZERO-WIDTH characters, safe for Japanese
     value = re.sub(r"[\u200b\u200c\u200d\u2060]", "", value)
@@ -224,7 +227,7 @@ def parse_repair_reserve_fund(value):
         num_value = re.sub(r"\D",'',value)
         return int(num_value)
     except Exception as e:
-        res_log(f"error cleaning parse_repair_reserve_fund as : {e}")
+        res_log.error(f"error cleaning parse_repair_reserve_fund as : {e}")
         return None
 
 def clean_value(key, value):

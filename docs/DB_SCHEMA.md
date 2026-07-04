@@ -117,3 +117,12 @@ key (non-null column name of user_preference) : value (3 , -3)
 ---
 
 
+## jp_realestate_image
+
+- id : Primary key 
+- listing_id : Reference jp_realestate_v1(id)
+- storage_path : TEXT
+- image_url : TEXT
+- image_order : INT
+
+---

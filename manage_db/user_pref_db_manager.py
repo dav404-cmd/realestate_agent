@@ -154,9 +154,10 @@ class UserPreference:
         return None
 
 
-    def update_pref(self, new_pref: Preference, user_id: str):
+    def update_pref(self, new_pref: Preference):
 
         data = new_pref.model_dump(exclude_none=True,exclude={"user_id"})
+        user_id = new_pref.user_id
 
         for field in ("preference_weight", "custom_pref"):
             if field in data:
@@ -203,17 +204,10 @@ class UserPreference:
 if __name__ == "__main__":
     db = UserPreference()
     test_pref = Preference(
-        user_id = "",
-        max_price= 24249450,
-        target_price= 16166300,
+        user_id = "dbb2b64d-4080-4294-963b-c3cd0178b6c8",
         user_name= "dom",
-        user_type= "buyer",
-        property_type="house",
-        preference_weight= {
-            "property_type" : 3,
-            "max_price" : 2
-        }
+        user_type= "buyer"
     )
-    data = db.get_pref("dbb2b64d-4080-4294-963b-c3cd0178b6c8")
-    print(data)
+    _id = db.update_pref(test_pref)
+    print(_id)
     db.close_conn()

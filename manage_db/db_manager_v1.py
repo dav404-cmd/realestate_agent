@@ -12,7 +12,7 @@ import os
 
 load_dotenv()
 #jp_realestate_v1
-class DbManagerV1:
+class DbManagerV1: #todo : remove table_name .
     def __init__(self,table_name :str | None , source = str | None):
         self.conn = psycopg2.connect(
             dbname=os.getenv("DB_NAME"),
@@ -76,11 +76,11 @@ class DbManagerV1:
         INSERT INTO {table} (price_yen,source_listing_id,source,data)
         VALUES (%s,%s,%s,%s)
         ON CONFLICT (source,source_listing_id) DO NOTHING
-        RETURNING id;
+        RETURNING id , source_listing_id ;
         """).format(table = sql.Identifier(self.table_name))
 
-        ids = []
-        with self.conn.cursor() as cur:
+        ids = {}
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
             for listing in listings:
                 clean_payload = dict(listing)
                 price_yen = clean_payload.pop('price_yen',None)
@@ -92,7 +92,7 @@ class DbManagerV1:
                 ])
                 result = cur.fetchone()
                 if result:
-                    ids.append(result[0])
+                    ids[result["source_listing_id"]] = result["id"]
             self.conn.commit()
         return ids
 

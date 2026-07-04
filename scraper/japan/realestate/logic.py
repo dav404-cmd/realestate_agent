@@ -3,7 +3,7 @@ import re
 
 from scraper.core.base_scraper import BaseScraper
 from scraper.japan.realestate.xpaths import CARDS,DETAILS_LINK,INFO_TABLE
-from scraper.japan.realestate.data_extractor import extract_data
+from scraper.japan.realestate.data_extractor import extract_data,extract_image,extract_listing
 from scraper.japan.realestate.clean_data import clean_all_listings
 
 from utils.logger import get_logger
@@ -53,9 +53,6 @@ class RealestateScraperLogic(BaseScraper):
         async def handle_page(item, index):
             page = await self.context.new_page()
 
-            async def page_closer():
-                await page.close()
-
             try:
                 url = item['url']
                 listing_id = item['listing_id']
@@ -63,7 +60,7 @@ class RealestateScraperLogic(BaseScraper):
                 res_log.info(f"[{index}] Opened: {url}")
 
                 await page.wait_for_selector(INFO_TABLE, timeout=15000)
-                data = await extract_data(page, page_closer)
+                data = await extract_listing(page)
 
                 if data:
                     data["source_listing_id"] = listing_id
@@ -73,10 +70,14 @@ class RealestateScraperLogic(BaseScraper):
 
             except KeyboardInterrupt:
                 res_log.warning("process stopped by the user.")
+                await page.close()
 
             except Exception as e:
                 res_log.error(f"[{index}] Error scraping {url}: {e}")
-                await page_closer()
+                await page.close()
+
+            finally:
+                await page.close()
 
         # Limit concurrency (to avoid hitting the site too hard)
         sem = asyncio.Semaphore(5)

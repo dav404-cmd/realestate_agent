@@ -6,17 +6,20 @@ import pandas as pd
 import os
 
 from manage_db.db_manager_v1 import DbManagerV1
+from manage_db.image_db_manager import ImageDb
 
 # the base script for scrapers.
 
 class BaseScraper:
-    def __init__(self):
+    def __init__(self,table_name:str,source:str):
         self.root_path = Path(__file__).parents[2].resolve()
         self.playwright = None
         self.browser = None
         self.context = None
         self.main_page = None
 
+        self.listing_db = DbManagerV1(table_name,source)
+        self.image_db = ImageDb()
 
     async def start_browser(self):
         self.playwright = await async_playwright().start()
@@ -92,12 +95,12 @@ class BaseScraper:
             encoding="utf-8-sig"
         )
 
-    @staticmethod
-    def store_db_v1(table_name : str , source : str , dic_list):
-        db = DbManagerV1(table_name,source)
-        ids = db.insert_data(dic_list)
-        print(f"Inserted {len(ids)} new rows into {table_name}, skipped {len(dic_list) - len(ids)} duplicates.")
+    async def store_db_v1(self , dic_list):
+        ids = await asyncio.to_thread(self.listing_db.insert_data,dic_list)
+        print(f"Inserted {len(ids)} new rows , skipped {len(dic_list) - len(ids)} duplicates.")
         return ids
 
-
-
+    async def store_image(self,listing_id,urls):
+        ids = await asyncio.to_thread(self.image_db.insert_ima_url,listing_id,urls)
+        print(f"Inserted {len(ids)} new rows into image db .")
+        return ids

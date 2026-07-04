@@ -7,7 +7,7 @@ res_log = get_logger("RealestateScraper")
 
 class RealestateScraperRunner:
     def __init__(self):
-        self.scraper = RealestateScraperLogic()
+        self.scraper = RealestateScraperLogic("jp_realestate_v1", "realestate.co")
 
     @staticmethod
     def check_last_page(previous_ids,ids,page_no):
@@ -19,7 +19,7 @@ class RealestateScraperRunner:
             return False
 
     # The main runner function.
-    async def run(self,building_type = None,max_pages = 389):  #None = all property
+    async def run(self,building_type = None,max_pages = 1):  #None = all property
         await self.scraper.start_browser()
 
         page_no = 1
@@ -51,9 +51,24 @@ class RealestateScraperRunner:
                 previous_ids = ids
 
                 data = await self.scraper.collect_data(ids,session_seen_id)
+                image_less_data = [{k: v for k, v in listing.items() if k != "images"} for listing in data]
 
-                #self.scraper.store_db("jp_realestate","realestate.co",data,create_table=False)
-                self.scraper.store_db_v1("jp_realestate_v1", "realestate.co", data)
+                id_map = await self.scraper.store_db_v1(image_less_data)
+
+                # Generates tasks only for successful database inserts
+                image_tasks = []
+                for listing in data:
+                    src_id = listing.get("source_listing_id")
+                    # Check if the listing successfully generated a database ID
+                    if src_id in id_map:
+                        db_id = id_map[src_id]
+                        image_tasks.append(self.scraper.store_image(db_id, listing["images"]))
+
+                # Fires all image thread-writes concurrently
+                if image_tasks:
+                    #await asyncio.gather(*image_tasks) later for speed (cant share psycopg2 conns in ImageDb{init})
+                    for task in image_tasks:
+                        await task
                 self.scraper.store_json(data,file_name="real_estate")
 
                 page_no += 1

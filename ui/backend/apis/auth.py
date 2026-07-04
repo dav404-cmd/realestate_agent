@@ -73,11 +73,12 @@ async def auth_callback(request:Request):
     jwt_token = create_jwt(str(user_id))
 
     response = RedirectResponse("http://localhost:5500/test.html") # the front page url
-    response.set_cookie(
+    response.set_cookie( #todo: test cookies
         key="rea_auth",
         value= jwt_token,
         httponly=True,
         samesite="lax",
+        path="/",
         max_age= 60*60*24*7
     )
     return response

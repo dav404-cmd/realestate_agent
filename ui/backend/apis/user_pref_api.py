@@ -25,11 +25,11 @@ def insert_user_pref(pref : Preference):
             "error" : str(e)
         }
 @router.post("/update_user_pref")
-def update_user_pref(pref : Preference,user_id : str):
+def update_user_pref(pref : Preference):
     api_log.info("Received preference update request.")
     try:
         db = UserPreference()
-        _id = db.update_pref(pref,user_id)
+        _id = db.update_pref(pref)
         api_log.info(f"Preference updated for user : {_id}")
         return {
             "id": _id

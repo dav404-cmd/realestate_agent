@@ -17,7 +17,7 @@ ml_analysis/notebooks/.ipynb_checkpoints
 ml_analysis/models/*
 ml_analysis/model
 
-data_extractor
+legacy/data_extractor
 
 legacy/
 
