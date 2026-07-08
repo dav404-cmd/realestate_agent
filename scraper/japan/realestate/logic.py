@@ -30,6 +30,18 @@ class RealestateScraperLogic(BaseScraper):
 
     async def get_cards_id(self,url):
         await self.main_page.goto(url, wait_until="domcontentloaded")
+
+        html = await self.main_page.content()
+        #with open("headless.html", "w", encoding="utf-8") as f:
+        #    f.write(html)
+        count = await self.main_page.locator(
+            '//div[contains(@class,"property-listing")]'
+        ).count()
+
+        res_log.info("property-listing" in html)
+        res_log.info(html.find("property-listing"))
+        res_log.info(f"count : {count}")
+
         cards = await self.main_page.query_selector_all(CARDS)
         res_log.info(f"found {len(cards)} cards")
         ids = []

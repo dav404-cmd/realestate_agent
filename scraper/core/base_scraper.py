@@ -11,7 +11,7 @@ from manage_db.image_db_manager import ImageDb
 # the base script for scrapers.
 
 class BaseScraper:
-    def __init__(self,table_name:str,source:str):
+    def __init__(self,table_name:str | None,source:str | None):
         self.root_path = Path(__file__).parents[2].resolve()
         self.playwright = None
         self.browser = None
@@ -23,10 +23,23 @@ class BaseScraper:
 
     async def start_browser(self):
         self.playwright = await async_playwright().start()
-        launch_args = {"headless" : True}
+        # Keep headless False so Playwright loads a full browser profile,
+        # but use chrome args to natively hide the visual window.
+        launch_args = {
+            "headless": False,
+            "args": [
+                "--headless=new",  # Natively hides the UI window
+                "--disable-blink-features=AutomationControlled"  # Removes basic automation flags
+            ]
+        }
         self.browser = await self.playwright.chromium.launch(**launch_args)
+        # Match your viewport and extra headers to look completely like a real desktop
         self.context = await self.browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+            device_scale_factor=1,
+            is_mobile=False,
+            has_touch=False,
             ignore_https_errors=True
         )
         self.main_page = await self.context.new_page()

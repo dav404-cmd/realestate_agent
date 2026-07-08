@@ -7,7 +7,7 @@ class AgentRuntime:
 
     def __init__(self, conn, openrouter=False):
         if openrouter:
-            llm = OpenRouterLLM("openrouter/owl-alpha")
+            llm = OpenRouterLLM("openrouter/free")
             key = "openrouter"
         else:
             llm = BytezLLM("Qwen/Qwen3-4B-Instruct-2507")

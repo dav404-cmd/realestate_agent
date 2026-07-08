@@ -89,7 +89,34 @@ class ImageDb:
             cur.execute(change_col_query)
 
         self.conn.commit()
+
+    def reset(self):
+        query = """
+        TRUNCATE TABLE jp_realestate_image RESTART IDENTITY;
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def has_image(self,listing_id) -> bool:
+        query = """
+        SELECT EXISTS(
+            SELECT 1 
+            FROM jp_realestate_image
+            WHERE listing_id = %s
+        );
+        """
+        self.cursor.execute(query,(listing_id,))
+        return self.cursor.fetchone()[0]
+
+    def get_listing_ids_with_images(self) -> set[int]:
+        with self.conn.cursor() as cur:
+            cur.execute("""
+            SELECT DISTINCT listing_id
+            FROM jp_realestate_image
+            """)
+            return {row[0] for row in cur.fetchall()}
+
 if __name__ == "__main__":
     db = ImageDb()
-    db.remap()
+    db.create_table()
     db.close_conn()
