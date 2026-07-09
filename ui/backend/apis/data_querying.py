@@ -24,8 +24,7 @@ async def lifespan(app:FastAPI):
     api_log.info("Database connected.")
 
     app.state.agent_runtime = AgentRuntime(
-        db.conn,
-        openrouter=True
+        db.conn
     )
 
     api_log.info("AgentRuntime loaded.")
