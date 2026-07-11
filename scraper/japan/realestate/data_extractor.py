@@ -35,6 +35,7 @@ async def extract_image(page) -> list:
         )
 
         images_src = ([stc_image] if stc_image else []) + images_src
+        images_src = [IMAGE_SUFFIX_RE.sub("", img) for img in images_src if img]
         images_src = list(dict.fromkeys(images_src))
         if not images_src:
             res_log.warning("Listing has no images")

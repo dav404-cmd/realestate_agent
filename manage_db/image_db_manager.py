@@ -70,6 +70,32 @@ class ImageDb:
         self.conn.commit()
         return _id
 
+    def get_images(self,_id):
+        query = """
+        SELECT id,image_url,image_order FROM jp_realestate_image
+        WHERE listing_id = %s
+        Order BY image_order ASC;
+        """
+        self.cursor.execute(query,(_id,))
+        return self.cursor.fetchall()
+
+    def get_thumbnails(self, _ids):
+        if not _ids:
+            return {}
+
+        query = """
+        SELECT listing_id, image_url FROM jp_realestate_image
+        WHERE image_order = 1 AND listing_id = ANY(%s);
+        """
+
+        self.cursor.execute(query, (_ids,))
+        rows = self.cursor.fetchall()
+
+        db_results = {row["listing_id"]: row["image_url"] for row in rows}
+        ids_map = {_id: db_results.get(_id, None) for _id in _ids}
+
+        return ids_map
+
     def remap(self):
         add_query = """
         ALTER TABLE jp_realestate_image
@@ -118,5 +144,6 @@ class ImageDb:
 
 if __name__ == "__main__":
     db = ImageDb()
-    db.create_table()
+    ima = db.get_thumbnails([6187, 6189, 642])
+    print(f"ima : {ima}")
     db.close_conn()
