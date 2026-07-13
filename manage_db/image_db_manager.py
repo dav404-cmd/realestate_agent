@@ -142,8 +142,21 @@ class ImageDb:
             """)
             return {row[0] for row in cur.fetchall()}
 
+    def test_query(self):
+        query = """SELECT
+        p.*,
+        i.image_url AS thumbnail_src 
+        FROM jp_realestate_v1 p 
+        LEFT JOIN jp_realestate_image i
+            ON p.id = i.listing_id
+            AND i.image_order = 1
+        WHERE p.status = 'active' AND p.id = 6186;
+        """
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+
 if __name__ == "__main__":
     db = ImageDb()
-    ima = db.get_thumbnails([6187, 6189, 642])
-    print(f"ima : {ima}")
+    ima = db.test_query()
+    print(f"results : {ima}")
     db.close_conn()

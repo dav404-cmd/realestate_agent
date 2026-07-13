@@ -51,58 +51,63 @@ class PropertyQuery(BaseModel):
 
 def build_property_query(q : PropertyQuery,table_name : str ):
     query  = sql.SQL("""
-    SELECT * 
-    FROM {table}
-    WHERE status = 'active'
+    SELECT
+    p.*,
+    i.image_url AS thumbnail_src 
+    FROM {table} p 
+    LEFT JOIN jp_realestate_image i
+        ON p.id = i.listing_id
+        AND i.image_order = 1
+    WHERE p.status = 'active'
     """).format(table = sql.Identifier(table_name))
 
     params = {}
     order_clauses = []
 
     if q.min_price is not None:
-        query += sql.SQL(" AND price_yen >= %(min_price)s")
+        query += sql.SQL(" AND p.price_yen >= %(min_price)s")
         params["min_price"] = q.min_price
 
     if q.max_price is not None:
-        query += sql.SQL(" AND price_yen <= %(max_price)s")
+        query += sql.SQL(" AND p.price_yen <= %(max_price)s")
         params["max_price"] = q.max_price
 
     if q.target_price is not None:
         order_clauses.append(
-            sql.SQL("ABS(price_yen - %(target_price)s)")
+            sql.SQL("ABS(p.price_yen - %(target_price)s)")
         )
         params["target_price"] = q.target_price
 
     if q.min_size is not None:
-        query += sql.SQL(" AND NULLIF(data ->> 'size','')::numeric >= %(min_size)s")
+        query += sql.SQL(" AND NULLIF(p.data ->> 'size','')::numeric >= %(min_size)s")
         params["min_size"] = q.min_size
 
     if q.max_size is not None:
-        query += sql.SQL(" AND NULLIF(data ->> 'size','')::numeric <= %(max_size)s")
+        query += sql.SQL(" AND NULLIF(p.data ->> 'size','')::numeric <= %(max_size)s")
         params["max_size"] = q.max_size
 
     if q.prefecture is not None:
-        query += sql.SQL(" AND (data ->> 'prefecture') = %(prefecture)s")
+        query += sql.SQL(" AND (p.data ->> 'prefecture') = %(prefecture)s")
         params["prefecture"] = q.prefecture
 
     if q.city is not None:
-        query += sql.SQL(" AND (data ->> 'city') = %(city)s")
+        query += sql.SQL(" AND (p.data ->> 'city') = %(city)s")
         params["city"] = q.city
 
     if q.district is not None:
-        query += sql.SQL(" AND (data ->> 'district') = %(district)s")
+        query += sql.SQL(" AND (p.data ->> 'district') = %(district)s")
         params["district"] = q.district
 
     if q.zoning is not None:
-        query += sql.SQL(" AND (data ->> 'zoning') = %(zoning)s")
+        query += sql.SQL(" AND (p.data ->> 'zoning') = %(zoning)s")
         params["zoning"] = q.zoning
 
     if q.structure is not None:
-        query += sql.SQL(" AND (data ->> 'structure') = %(structure)s")
+        query += sql.SQL(" AND (p.data ->> 'structure') = %(structure)s")
         params["structure"] = q.structure
 
     if q.occupancy is not None:
-        query += sql.SQL(" AND (data ->> 'occupancy') = %(occupancy)s")
+        query += sql.SQL(" AND (p.data ->> 'occupancy') = %(occupancy)s")
         params["occupancy"] = q.occupancy
 
     allowed_sorts = { #todo:map and use sql to apply null protection
@@ -116,7 +121,7 @@ def build_property_query(q : PropertyQuery,table_name : str ):
     order = "ASC" if q.sort_order == "asc" else "DESC"
 
     order_clauses.append(
-        sql.SQL("{} {}").format(
+        sql.SQL("p.{} {}").format(
         sql.Identifier(sort_by),
         sql.SQL(order)
     )
