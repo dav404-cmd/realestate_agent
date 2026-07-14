@@ -165,16 +165,27 @@ class DbManagerV1: #todo : remove table_name .
         return df
 
     def get_by_id(self,id_):
-        query = sql.SQL("""
-        SELECT *
-        FROM {table}
-        WHERE id = %s
-        """).format(table = sql.Identifier(self.table_name))
-        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(query,(id_,))
-            listing = cur.fetchone()
-
-        return listing
+        query = """
+                SELECT p.*,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                        'id',i.id,
+                        'image_url',i.image_url,
+                        'image_order',i.image_order
+                        )
+                        ORDER BY i.image_order
+                    ) FILTER (WHERE i.id IS NOT NULL) , '[]'
+                ) AS images
+                FROM jp_realestate_v1 p
+                LEFT JOIN jp_realestate_image i
+                    ON p.id = i.listing_id
+                WHERE p.id = %s
+                GROUP BY p.id ;
+                """
+        self.cursor.execute(query, (id_,))
+        result = self.cursor.fetchone()
+        return result  # images = list[dict{id , image_url , image_order}] | list[]
 
     def get_options(self,column_name):
         query = sql.SQL("""

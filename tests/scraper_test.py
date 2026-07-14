@@ -4,7 +4,7 @@ from scraper.japan.realestate.logic import RealestateScraperLogic
 
 @pytest_asyncio.fixture
 async def scraper():
-    logic = RealestateScraperLogic()
+    logic = RealestateScraperLogic("jp_realestate_v1", "realestate.co")
     await logic.start_browser()
     yield logic
     await logic.close_browser()
