@@ -1,9 +1,9 @@
 from fastapi import FastAPI
-from ui.backend.apis.data_querying import lifespan
-from ui.backend.apis.data_querying import router as query_router
-from ui.backend.apis.auth import router as auth_router
-from ui.backend.apis.agent_api import router as agent_router
-from ui.backend.apis.user_pref_api import router as pref_router
+from apis.data_querying import lifespan
+from apis.data_querying import router as query_router
+from apis.auth import router as auth_router
+from apis.agent_api import router as agent_router
+from apis.user_pref_api import router as pref_router
 
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
