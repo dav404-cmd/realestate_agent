@@ -126,3 +126,31 @@ key (non-null column name of user_preference) : value (3 , -3)
 - image_order : INT
 
 ---
+
+## agent_message
+
+- id : Primary key
+
+- thread_id : thread_id REFERENCES agent_threads(id)
+
+- user_input
+- response
+
+- intent
+- extracted_filters JSONB
+
+- result_ids : JSONB [{id:int , score:int|float}]
+
+- created_at TIMESTAMPTZ
+
+---
+
+## agent_thread 
+
+- id UUID PRIMARY KEY
+- user_id : REFERENCE users(id:uuid)
+- title : TEXT
+- created_at : TIMESTAMPTZ
+- updated_at : TIMESTAMPTZ
+
+---
