@@ -1,5 +1,6 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from psycopg2.extras import Json
 
 import os
 from dotenv import load_dotenv
@@ -79,8 +80,52 @@ class AgentMemory:
         self.conn.commit()
         agent_log.info("Created agent_message table")
 
+    def create_indexes(self):
+        thread_id_index = """
+        CREATE INDEX IF NOT EXISTS idx_agent_message_thread
+        ON agent_message(thread_id);
+        """
+        self.cursor.execute(thread_id_index)
+        self.conn.commit()
+
+    def new_thread(self,user_id,title):
+        query = """
+        INSERT INTO agent_thread (user_id,title)
+        VALUES (%s,%s)
+        RETURNING id;
+        """
+        self.cursor.execute(query,(user_id,title))
+        self.conn.commit()
+        row = self.cursor.fetchone()
+        if row:
+            agent_log.info(f"New thread made : {row['id']}")
+            return row["id"]
+        agent_log.warning("Insert failed could be due to id dups")
+        return None
+
+    def insert_message(self,thread_id,reduced_state):
+        query = """
+        INSERT INTO agent_message (thread_id,user_input,response,intent,extracted_filters,result_ids)
+        VALUES (%s,%s,%s,%s,%s,%s)
+        RETURNING id;
+        """
+        self.cursor.execute(query, (
+            thread_id,
+            reduced_state.get('user_input'),
+            reduced_state.get('response'),
+            reduced_state.get('intent'),
+            Json(reduced_state.get('extracted_filters')),
+            Json(reduced_state.get('result_ids')),
+        ))
+        self.conn.commit()
+        row = self.cursor.fetchone()
+        if row:
+            agent_log.info(f"message stored for : {row['id']}")
+            return row["id"]
+        agent_log.warning("Insert failed .")
+        return None
 
 if __name__ == "__main__":
     db = AgentMemory()
-    db.create_agent_messages_table()
+    db.create_indexes()
     db.close_conn()

@@ -1,5 +1,4 @@
 from langgraph.graph import StateGraph,END
-from langgraph.checkpoint.memory import MemorySaver
 
 from ai_agent.nodes.casual_responder import make_casual_responder
 from ai_agent.nodes.intent_router import make_intent_router,route_by_intent
@@ -9,7 +8,7 @@ from ai_agent.nodes.search_executor import make_search_executor
 from ai_agent.state import AgentState
 
 
-def build_graph(llm,conn,table_name):
+def build_graph(llm,conn,table_name,checkpointer):
     graph = StateGraph(AgentState)
 
     graph.add_node("intent",make_intent_router(llm))
@@ -30,7 +29,5 @@ def build_graph(llm,conn,table_name):
     graph.add_edge("query","search")
     graph.add_edge("search","explain")
     graph.add_edge("explain",END)
-
-    checkpointer = MemorySaver()
 
     return graph.compile(checkpointer=checkpointer)

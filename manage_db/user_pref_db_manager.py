@@ -203,11 +203,6 @@ class UserPreference:
 
 if __name__ == "__main__":
     db = UserPreference()
-    test_pref = Preference(
-        user_id = "dbb2b64d-4080-4294-963b-c3cd0178b6c8",
-        user_name= "dom",
-        user_type= "buyer"
-    )
-    _id = db.update_pref(test_pref)
-    print(_id)
+    results = db.get_pref(os.getenv("TEST_USER_ID"))
+    print(f"result : {results}")
     db.close_conn()
