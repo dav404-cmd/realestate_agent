@@ -14,7 +14,7 @@ class AgentState(BaseModel):
 
     # property search
     extracted_filters: Optional[Dict[str, Any]] = None
-    query_object: Optional[Dict[str, Any]] = None
+    query_object: Optional[Dict[str, Any]] = None   #todo : remove this and test , likely not used
     results: Optional[List[Dict[str, Any]]] = None
 
     # final response

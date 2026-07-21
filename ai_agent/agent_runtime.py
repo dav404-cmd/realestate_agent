@@ -5,6 +5,8 @@ import psycopg
 from psycopg.rows import dict_row
 from langgraph.checkpoint.postgres import PostgresSaver
 
+from manage_db.agent_db_manager import AgentMemory
+
 import os
 from dotenv import load_dotenv
 
@@ -40,6 +42,7 @@ class AgentRuntime:
     _graph = None
     _llm = None
     _checkpointer = None
+    _db = None
 
     def __init__(self, conn):
 
@@ -80,6 +83,10 @@ class AgentRuntime:
                 checkpointer = AgentRuntime._checkpointer
             )
 
+        if AgentRuntime._db is None:
+            AgentRuntime._db = AgentMemory()
+
+        self.agent_db = AgentRuntime._db
         self.llm = AgentRuntime._llm
         self.conn = AgentRuntime._conn
         self.agent = AgentRuntime._graph # it's the graph , just keep its name agent why not .

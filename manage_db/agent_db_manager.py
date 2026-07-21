@@ -2,6 +2,9 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.extras import Json
 
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+
 import os
 from dotenv import load_dotenv
 from utils.logger import get_logger
@@ -125,7 +128,37 @@ class AgentMemory:
         agent_log.warning("Insert failed .")
         return None
 
+    def get_messages(self,thread_id):
+        query = """
+        SELECT user_input,response,created_at
+        FROM agent_message 
+        WHERE thread_id = %s;
+        """
+        self.cursor.execute(query,(thread_id,))
+        rows = self.cursor.fetchall()
+        if rows:
+            agent_log.info(f"Got messages for : {thread_id}")
+            return rows
+        agent_log.warning(f"Rows not found for {thread_id}")
+        return []
+
+    def get_threads(self,user_id):
+        query = """
+        SELECT id,title,created_at,updated_at
+        FROM agent_thread
+        WHERE user_id = %s;
+        """
+        self.cursor.execute(query,(user_id,))
+        rows = self.cursor.fetchall()
+        if rows:
+            agent_log.info(f"Got threads for user : {user_id}")
+            return rows
+        agent_log.warning(f"Threads not found for user : {user_id}")
+        return []
+
 if __name__ == "__main__":
     db = AgentMemory()
-    db.create_indexes()
+    results = db.get_threads(os.getenv("TEST_USER_ID"))
+    json_data = jsonable_encoder(results)
+    print(JSONResponse(content=json_data).body)
     db.close_conn()
