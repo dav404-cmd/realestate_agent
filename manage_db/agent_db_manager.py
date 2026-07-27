@@ -132,7 +132,8 @@ class AgentMemory:
         query = """
         SELECT user_input,response,created_at
         FROM agent_message 
-        WHERE thread_id = %s;
+        WHERE thread_id = %s
+        ORDER BY created_at ASC;
         """
         self.cursor.execute(query,(thread_id,))
         rows = self.cursor.fetchall()
@@ -146,7 +147,8 @@ class AgentMemory:
         query = """
         SELECT id,title,created_at,updated_at
         FROM agent_thread
-        WHERE user_id = %s;
+        WHERE user_id = %s
+        ORDER BY updated_at DESC;
         """
         self.cursor.execute(query,(user_id,))
         rows = self.cursor.fetchall()

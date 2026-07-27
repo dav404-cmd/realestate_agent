@@ -1,0 +1,153 @@
+/*
+  Design tokens — "ledger & lantern"
+  Dark theme is primary/default per brief. Light theme values are included
+  so the system-theme hook works end-to-end, but dark is the tuned palette.
+*/
+
+:root,
+[data-theme='dark'] {
+	--color-bg: #14161b;
+	--color-bg-elevated-gradient: radial-gradient(120% 120% at 10% 0%, #1a1d24 0%, #14161b 55%);
+	--color-surface: #1b1e25;
+	--color-surface-2: #232733;
+	--color-border: #2b2f3a;
+	--color-border-soft: #22252e;
+
+	--color-text: #ece7dc;
+	--color-text-muted: #92959c;
+	--color-text-faint: #62656c;
+
+	--color-accent: #6f93b3;
+	--color-accent-strong: #8fb0cd;
+	--color-accent-bg: rgba(111, 147, 179, 0.12);
+
+	--color-secondary: #c9a063;
+	--color-secondary-bg: rgba(201, 160, 99, 0.12);
+
+	--color-danger: #c07268;
+	--color-success: #7fa889;
+
+	--shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.32);
+	--shadow-lift: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme='light'] {
+	--color-bg: #f2efe6;
+	--color-bg-elevated-gradient: radial-gradient(120% 120% at 10% 0%, #faf8f2 0%, #f2efe6 55%);
+	--color-surface: #fbfaf6;
+	--color-surface-2: #ffffff;
+	--color-border: #e2ddcf;
+	--color-border-soft: #ece7d9;
+
+	--color-text: #23262c;
+	--color-text-muted: #6b6e75;
+	--color-text-faint: #9a9ca3;
+
+	--color-accent: #3f5c76;
+	--color-accent-strong: #2e4759;
+	--color-accent-bg: rgba(63, 92, 118, 0.08);
+
+	--color-secondary: #a67c3d;
+	--color-secondary-bg: rgba(166, 124, 61, 0.1);
+
+	--color-danger: #a5473c;
+	--color-success: #4f7c5c;
+
+	--shadow-soft: 0 10px 30px rgba(35, 30, 20, 0.08);
+	--shadow-lift: 0 16px 40px rgba(35, 30, 20, 0.12);
+}
+
+:root {
+	--radius-sm: 8px;
+	--radius-md: 14px;
+	--radius-lg: 22px;
+	--radius-pill: 999px;
+
+	--font-display: 'Fraunces', 'Iowan Old Style', serif;
+	--font-body: 'Inter', system-ui, -apple-system, sans-serif;
+	--font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+	--ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+	--dur-fast: 140ms;
+	--dur-med: 260ms;
+	--dur-slow: 420ms;
+
+	--container-max: 1180px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	color-scheme: dark;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: var(--color-bg-elevated-gradient);
+	color: var(--color-text);
+	font-family: var(--font-body);
+	font-size: 15px;
+	line-height: 1.55;
+	-webkit-font-smoothing: antialiased;
+	transition:
+		background var(--dur-slow) var(--ease-soft),
+		color var(--dur-slow) var(--ease-soft);
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--font-display);
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	margin: 0;
+	color: var(--color-text);
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+button {
+	font-family: inherit;
+}
+
+::selection {
+	background: var(--color-accent-bg);
+	color: var(--color-text);
+}
+
+/* Respect reduced motion everywhere */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* Visible keyboard focus, no outline suppression */
+:focus-visible {
+	outline: 2px solid var(--color-accent-strong);
+	outline-offset: 2px;
+	border-radius: var(--radius-sm);
+}
+
+.container {
+	max-width: var(--container-max);
+	margin: 0 auto;
+	padding: 0 24px;
+}
+
+@media (max-width: 640px) {
+	.container {
+		padding: 0 16px;
+	}
+}

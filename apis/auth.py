@@ -1,6 +1,6 @@
 from fastapi import APIRouter,HTTPException
 from fastapi import Request,Depends
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse,JSONResponse
 
 from authlib.integrations.starlette_client import OAuth
 from jose import jwt,JWTError
@@ -103,3 +103,8 @@ def me(user_id: str = Depends(get_current_user)):
         )
     return {"user_id": user_id}
 
+@router.post("/logout")
+def logout():
+    response = JSONResponse({"status": "ok"})
+    response.delete_cookie(key="rea_auth", path="/")
+    return response
