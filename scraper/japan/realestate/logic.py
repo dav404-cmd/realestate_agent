@@ -1,9 +1,8 @@
 import asyncio
-import re
 
 from scraper.core.base_scraper import BaseScraper
-from scraper.japan.realestate.xpaths import CARDS,DETAILS_LINK,INFO_TABLE
-from scraper.japan.realestate.data_extractor import extract_data,extract_image,extract_listing
+from scraper.japan.realestate.xpaths import CARDS,INFO_TABLE
+from scraper.japan.realestate.data_extractor import extract_listing
 from scraper.japan.realestate.clean_data import clean_all_listings
 
 from utils.logger import get_logger
@@ -31,27 +30,14 @@ class RealestateScraperLogic(BaseScraper):
     async def get_cards_id(self,url):
         await self.main_page.goto(url, wait_until="domcontentloaded")
 
-        html = await self.main_page.content()
-        #with open("headless.html", "w", encoding="utf-8") as f:
-        #    f.write(html)
-        count = await self.main_page.locator(
-            '//div[contains(@class,"property-listing")]'
-        ).count()
-
-        res_log.info("property-listing" in html)
-        res_log.info(html.find("property-listing"))
-        res_log.info(f"count : {count}")
-
         cards = await self.main_page.query_selector_all(CARDS)
         res_log.info(f"found {len(cards)} cards")
         ids = []
+
         for card in cards:
-            link = await card.query_selector(DETAILS_LINK)
-            if link:
-                href = await link.get_attribute('href')
-                match = re.search(r'/view/(\d+)',href)
-                if match:
-                    ids.append(match.group(1))
+            prop_id = await card.get_attribute("id")
+            if prop_id:
+                ids.append(prop_id.removeprefix("property-"))
             else:
                 res_log.error("link not found.")
         res_log.info("found ids")
@@ -71,7 +57,6 @@ class RealestateScraperLogic(BaseScraper):
                 await page.goto(url, timeout=30000, wait_until="domcontentloaded")
                 res_log.info(f"[{index}] Opened: {url}")
 
-                await page.wait_for_selector(INFO_TABLE, timeout=15000)
                 data = await extract_listing(page)
 
                 if data:

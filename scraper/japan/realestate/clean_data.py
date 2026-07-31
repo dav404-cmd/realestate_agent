@@ -197,28 +197,54 @@ def parse_location(value):
         "prefecture": None
     }
 
-def parse_nearest_station(value):
-    if not value:
-        return {
-            "ns_name":None,
-            "ns_distance_min":None,
-            "ns_mode":None,
-            "ns_line":None
-        }
-    match = re.match(r"^(.*?) Station \((\d+) min\. ([\w\s]+)\) (.+)$" , value)
-    if match :
-        return {
-            "ns_name": match.group(1),
-            "ns_distance_min": match.group(2),
-            "ns_mode": match.group(3),
-            "ns_line": match.group(4)
-        }
+def split_station_name_line(name_raw: str):
+    """Split "Hachioji Station (JR Chuo Line (Tokyo-Shiojiri))" into
+    ("Hachioji Station", "JR Chuo Line (Tokyo-Shiojiri)").
+    Balanced-paren aware, so a nested paren in the line name doesn't break it.
+    Returns (name, None) if there's no trailing parenthetical."""
+    name_raw = name_raw.strip()
+    if not name_raw.endswith(")"):
+        return name_raw, None
+
+    depth = 0
+    open_idx = None
+    for idx in range(len(name_raw) - 1, -1, -1):
+        c = name_raw[idx]
+        if c == ")":
+            depth += 1
+        elif c == "(":
+            depth -= 1
+            if depth == 0:
+                open_idx = idx
+                break
+
+    if open_idx is None:
+        return name_raw, None
+
+    line = name_raw[open_idx + 1:-1].strip()
+    station = name_raw[:open_idx].strip()
+    return (station, line) if station else (name_raw, None)
+
+
+_RE_TIME = re.compile(r"^(\d+)\s*min\.?\s*(.*)$")
+
+def parse_nearest_station(name_raw, time_raw):
+    empty = {"ns_name": None, "ns_distance_min": None, "ns_mode": None, "ns_line": None}
+    if not name_raw or not time_raw:
+        return empty
+
+    station, line = split_station_name_line(name_raw)
+
+    match = _RE_TIME.match(time_raw.strip())
+    if not match:
+        return empty
+
     return {
-            "ns_name":None,
-            "ns_distance_min":None,
-            "ns_mode":None,
-            "ns_line":None
-        }
+        "ns_name": station,
+        "ns_distance_min": match.group(1),
+        "ns_mode": match.group(2).strip() or None,
+        "ns_line": line,
+    }
 
 def parse_repair_reserve_fund(value):
     if not value :
@@ -284,7 +310,6 @@ def customize_listing(cleaned_dict: dict):
         "floor" : parse_floor,
         "floors": parse_floors,
         "location" : parse_location,
-        "nearest_station" : parse_nearest_station,
         "repair_reserve_fund" : parse_repair_reserve_fund,
     }
 
@@ -319,6 +344,11 @@ def clean_and_normalize_dict(raw: dict) -> dict:
 
     for k, v in normalized.items():
         cleaned[k] = clean_value(k, v)
+
+    if "ns_raw_name" in cleaned or "ns_raw_time" in cleaned:
+        cleaned.update(parse_nearest_station(
+            cleaned.pop("ns_raw_name", None), cleaned.pop("ns_raw_time", None)
+        ))
 
     mapped = customize_listing(cleaned)
 

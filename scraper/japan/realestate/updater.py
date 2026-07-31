@@ -2,7 +2,7 @@ import asyncio
 
 from scraper.japan.realestate.xpaths import EXPIRED
 from scraper.core.base_scraper import BaseScraper
-from scraper.japan.realestate.data_extractor import extract_image
+from scraper.japan.realestate.data_extractor import extract_images_via_overlay
 
 from manage_db.db_manager_v1 import DbManagerV1
 from manage_db.image_db_manager import ImageDb
@@ -39,7 +39,7 @@ class UpdateRealEstate(BaseScraper):
                     res_updater.info(f"{index} is live")
 
                     if listing_id not in image_ids:
-                        images = await extract_image(page)
+                        images = await extract_images_via_overlay(page)
                         db_img.insert_ima_url(listing_id,images)
                         res_updater.info(f"found image for {index}")
 
