@@ -88,12 +88,14 @@ async def extract_static_dom_data(page) -> dict: #todo : fix extraction in featu
             result['ns_raw_time'] = walk;
             
             // 8. Features
-            const features = [];
+            const featureSet = new Set();
             document.querySelectorAll('div.border.bg-white.border-gray-200.rounded-lg').forEach(el => {
-                const text = el.innerText.trim();
-                if (text) features.push(text);
+                const clone = el.cloneNode(true);
+                clone.querySelectorAll('style, svg').forEach(node => node.remove()); // strip icon SVG/CSS noise
+                const text = clone.innerText.trim();
+                if (text) featureSet.add(text);
             });
-            if (features.length > 0) result['Features'] = features;
+            if (featureSet.size > 0) result['Features'] = Array.from(featureSet);
 
             // 9. Agent Name
             const agentEl = document.querySelector('.card.max-w-sm .card-title');

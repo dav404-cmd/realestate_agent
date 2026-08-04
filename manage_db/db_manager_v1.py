@@ -12,7 +12,7 @@ import os
 
 load_dotenv()
 #jp_realestate_v1
-class DbManagerV1: #todo : remove table_name .
+class DbManagerV1: #todo : remove table_name and add logging.
     def __init__(self,table_name :str | None , source = str | None):
         self.conn = psycopg2.connect(
             dbname=os.getenv("DB_NAME"),
@@ -31,6 +31,8 @@ class DbManagerV1: #todo : remove table_name .
         if self.conn:
             self.conn.close()
 
+    #--db management--
+
     def create_table(self):
         query = sql.SQL("""
         CREATE TABLE IF NOT EXISTS {table} (
@@ -40,6 +42,7 @@ class DbManagerV1: #todo : remove table_name .
         data JSONB,
         status TEXT DEFAULT 'active',
         last_update TIMESTAMPTZ DEFAULT NOW(),
+        last_metadata_update TIMESTAMPTZ DEFAULT NOW(),
         price_yen BIGINT,
         source_listing_id TEXT NOT NULL 
         )
@@ -131,6 +134,8 @@ class DbManagerV1: #todo : remove table_name .
             self.conn.commit()
         print(f"Reset {self.table_name}")
 
+    #--for updating--
+
     def update_status(self,listing_id:int , status : str):
         query = sql.SQL("""
         UPDATE {table}
@@ -138,7 +143,7 @@ class DbManagerV1: #todo : remove table_name .
         WHERE id = %s; 
         """).format(table = sql.Identifier(self.table_name))
         self.cursor.execute(query,(status,listing_id))
-        self.conn.commit()
+        #
 
     def update_last_update(self,listing_id:int):
         query = sql.SQL("""
@@ -147,9 +152,34 @@ class DbManagerV1: #todo : remove table_name .
         WHERE id = %s;
         """).format(table = sql.Identifier(self.table_name))
         self.cursor.execute(query,(listing_id,))
-        self.conn.commit()
+        #
 
-    # QUERYING FUNCTIONS
+
+    def update_listing(self,listing_id,listing):
+        _id = None
+
+        query = """
+        UPDATE jp_realestate_v1
+        SET
+            price_yen = %s,
+            data = %s,
+            last_metadata_update = CURRENT_TIMESTAMP
+        WHERE id = %s
+        RETURNING id;
+        """
+
+        clean_payload = dict(listing)
+        price_yen = clean_payload.pop("price_yen",None)
+
+        json_data = json.dumps(clean_payload,ensure_ascii=False)
+
+        self.cursor.execute(query,(price_yen ,json_data ,listing_id))
+        result = self.cursor.fetchone()
+        if result:
+            _id = result["id"]
+
+        print(f"Updated meta data of : {listing_id}")
+        return _id
 
     def get_active_ids(self):
         query = f"""
@@ -158,11 +188,27 @@ class DbManagerV1: #todo : remove table_name .
         WHERE status = 'active'
         AND last_update < NOW() - INTERVAL '3 days';
         """
+        # maybe get listing of only 24 hr old for status updater .
 
         engine = self.get_db_engine()
         df = pd.read_sql(query,engine)
 
         return df
+
+    def get_ids_to_update(self):
+        query = f"""
+                SELECT id,source_listing_id 
+                FROM jp_realestate_v1
+                WHERE status = 'active'
+                AND last_metadata_update < NOW() - INTERVAL '3 days';
+                """
+
+        engine = self.get_db_engine()
+        df = pd.read_sql(query, engine)
+
+        return df
+
+    #--Querying--
 
     def get_by_id(self,id_):
         query = """
@@ -186,6 +232,8 @@ class DbManagerV1: #todo : remove table_name .
         self.cursor.execute(query, (id_,))
         result = self.cursor.fetchone()
         return result  # images = list[dict{id , image_url , image_order}] | list[]
+
+    #--querying--
 
     def get_options(self,column_name):
         query = sql.SQL("""
@@ -232,7 +280,7 @@ class DbManagerV1: #todo : remove table_name .
 
         return result
 
-    # for preprocessing
+    #--for preprocessing--
 
     @staticmethod
     def auto_cast_numeric(df):
@@ -276,3 +324,22 @@ class DbManagerV1: #todo : remove table_name .
 
 
         return df
+
+
+
+    # --one time scripts--
+
+    def add_last_metadata_update(self):
+        query = """
+        ALTER TABLE jp_realestate_v1
+        ADD COLUMN IF NOT EXISTS last_metadata_update TIMESTAMPTZ;
+        """
+        adjustment = """
+        UPDATE jp_realestate_v1
+        SET last_metadata_update = scraped_at
+        WHERE last_metadata_update IS NULL;
+        """
+        with self.conn.cursor() as cur :
+            cur.execute(query)
+            cur.execute(adjustment)
+        self.conn.commit()
