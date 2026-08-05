@@ -23,3 +23,5 @@ legacy/
 
 !ml_analysis/notebooks/price_pred_v1.ipynb
 !ml_analysis/models/catboost_real_estate.cbm
+
+logs/

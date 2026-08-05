@@ -5,7 +5,7 @@ import pandas as pd
 from collections.abc import Sequence
 import ast
 
-res_log = get_logger("RealestateCleaner")
+res_log = get_logger("RealestateCleaner","scraper")
 
 def normalize_key(key: str) -> str:
     if not isinstance(key, str):

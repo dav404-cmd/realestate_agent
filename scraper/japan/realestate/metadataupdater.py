@@ -9,7 +9,7 @@ from manage_db.image_db_manager import ImageDb
 
 from utils.logger import get_logger
 
-res_updater = get_logger("RealEstateDataUpdater")
+res_updater = get_logger("RealEstateDataUpdater","scraper")
 
 db = DbManagerV1(table_name="jp_realestate_v1")
 db_img = ImageDb()
@@ -42,6 +42,8 @@ class MetaDataUpdater(BaseScraper):
                 if element:
                     res_updater.info(f"{index} Expired message detected : {url}")
                     db.update_status(listing_id,"expired")
+                    db.update_last_update(listing_id)
+                    return
                 else:
                     db.update_status(listing_id, "active")
                     res_updater.info(f"{index} is live")
@@ -91,7 +93,7 @@ class MetaDataUpdater(BaseScraper):
             while True:
                 res_updater.info("Starting update cycle")
 
-                df = db.get_active_ids()
+                df = db.get_active_ids_metadata()
                 image_ids = db_img.get_listing_ids_with_images()
 
                 #make urls

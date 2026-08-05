@@ -7,7 +7,7 @@ from scraper.japan.realestate.clean_data import clean_all_listings
 
 from utils.logger import get_logger
 
-res_log = get_logger("RealestateScraper")
+res_log = get_logger("RealestateScraper","scraper")
 
 class RealestateScraperLogic(BaseScraper):
 

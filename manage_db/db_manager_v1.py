@@ -10,6 +10,10 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 
+from utils.logger import get_logger
+
+db_log = get_logger("DB_MANAGER","db_management")
+
 load_dotenv()
 #jp_realestate_v1
 class DbManagerV1: #todo : remove table_name and add logging.
@@ -71,7 +75,7 @@ class DbManagerV1: #todo : remove table_name and add logging.
             cur.execute(partial_idx_query)
 
         self.conn.commit()
-        print(f"Table {self.table_name} has been created.")
+        db_log.info(f"Table {self.table_name} has been created.")
 
     #todo:update last_update if duplicate is found , last_update defaults to scraped_at .
     def insert_data(self,listings): # Stores the data of a page at once
@@ -106,7 +110,7 @@ class DbManagerV1: #todo : remove table_name and add logging.
         with self.conn.cursor() as cur:
             cur.execute(query)
             self.conn.commit()
-        print(f"deleted all data form {self.table_name}")
+        db_log.critical(f"deleted all data form {self.table_name}")
 
     @staticmethod
     def get_db_engine():
@@ -121,7 +125,7 @@ class DbManagerV1: #todo : remove table_name and add logging.
             with engine.connect() as conn:
                 pass
         except Exception as e:
-            print(f"Connection with engine failed , error : {e}")
+            db_log.exception(f"Connection with engine failed , error : {e}")
 
         return engine
 
@@ -132,7 +136,7 @@ class DbManagerV1: #todo : remove table_name and add logging.
         with self.conn.cursor() as cur:
             cur.execute(query)
             self.conn.commit()
-        print(f"Reset {self.table_name}")
+        db_log.critical(f"Reset {self.table_name}")
 
     #--for updating--
 
@@ -161,7 +165,7 @@ class DbManagerV1: #todo : remove table_name and add logging.
         query = """
         UPDATE jp_realestate_v1
         SET
-            price_yen = %s,
+            price_yen = COALESCE(%s, price_yen),
             data = %s,
             last_metadata_update = CURRENT_TIMESTAMP
         WHERE id = %s
@@ -178,17 +182,30 @@ class DbManagerV1: #todo : remove table_name and add logging.
         if result:
             _id = result["id"]
 
-        print(f"Updated meta data of : {listing_id}")
+        db_log.info(f"Updated meta data of : {listing_id}")
         return _id
+
+    def get_active_ids_metadata(self):
+        query = f"""
+        SELECT id,source_listing_id 
+        FROM {self.table_name}
+        WHERE status = 'active'
+        AND last_metadata_update < NOW() - INTERVAL '5 days';
+        """
+
+        engine = self.get_db_engine()
+        df = pd.read_sql(query,engine)
+
+        return df
 
     def get_active_ids(self):
         query = f"""
         SELECT id,source_listing_id 
         FROM {self.table_name}
         WHERE status = 'active'
-        AND last_update < NOW() - INTERVAL '3 days';
+        AND last_update < NOW() - INTERVAL '24 hours';
         """
-        # maybe get listing of only 24 hr old for status updater .
+        # todo : think the time though .
 
         engine = self.get_db_engine()
         df = pd.read_sql(query,engine)
@@ -343,3 +360,14 @@ class DbManagerV1: #todo : remove table_name and add logging.
             cur.execute(query)
             cur.execute(adjustment)
         self.conn.commit()
+
+    def remove_null_price(self):
+        query = """
+        DELETE FROM jp_realestate_v1
+        WHERE price_yen IS NULL
+        RETURNING id;
+        """
+        self.cursor.execute(query)
+        results = self.cursor.fetchall()
+        return [row['id'] for row in results] if results else None
+

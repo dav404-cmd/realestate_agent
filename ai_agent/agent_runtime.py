@@ -1,5 +1,5 @@
 from ai_agent.agent_graph import build_graph
-from ai_agent.llm_wrappers import OpenRouterLLM
+from ai_agent.llm_wrappers import OpenRouterLLM,GloqLLM
 
 import psycopg
 from psycopg.rows import dict_row
@@ -70,6 +70,7 @@ class AgentRuntime:
 
         if AgentRuntime._llm is None:
             AgentRuntime._llm = MultiLLm([
+                GloqLLM("openai/gpt-oss-120b"),
                 OpenRouterLLM("nvidia/nemotron-3-super-120b-a12b:free"),
                 OpenRouterLLM("google/gemma-4-31b-it:free"),
                 OpenRouterLLM("openrouter/free")

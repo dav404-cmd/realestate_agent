@@ -3,7 +3,7 @@ import asyncio
 from scraper.japan.realestate.logic import RealestateScraperLogic
 from utils.logger import get_logger
 
-res_log = get_logger("RealestateScraper")
+res_log = get_logger("RealestateScraper","scraper")
 
 class RealestateScraperRunner:
     def __init__(self):
@@ -19,12 +19,14 @@ class RealestateScraperRunner:
             return False
 
     # The main runner function.
-    async def run(self,building_type = None,max_pages = 3):  #None = all property
+    async def run(self,building_type = None,max_pages = 1):  #None = all property
         await self.scraper.start_browser()
 
         page_no = 1
         previous_ids = None
         session_seen_id = set()
+
+        self.scraper.clear_json("real_estate")
 
         try:
             while page_no <= max_pages:
@@ -32,9 +34,9 @@ class RealestateScraperRunner:
                 res_log.info(f"scraping page {page_no}")
 
                 if not building_type:
-                    url = f"https://realestate.co.jp/en/forsale?page={page_no}"
+                    url = f"https://realestate.co.jp/en/forsale?order=date_entered_ranking-desc&page={page_no}"
                 else:
-                    url = f"https://realestate.co.jp/en/forsale?building_type={building_type}&page={page_no}"
+                    url = f"https://realestate.co.jp/en/forsale?building_type={building_type}&order=date_entered_ranking-desc&page=1"
 
                 ids = await self.scraper.get_cards_id(url)
 

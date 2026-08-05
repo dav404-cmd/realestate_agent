@@ -8,6 +8,10 @@ import os
 from manage_db.db_manager_v1 import DbManagerV1
 from manage_db.image_db_manager import ImageDb
 
+from utils.logger import get_logger
+
+scr_log = get_logger("ScraperCore","scraper")
+
 # the base script for scrapers.
 
 class BaseScraper:
@@ -72,10 +76,23 @@ class BaseScraper:
                 header=file_empty,
                 index=False
             )
-            print(f"Appended to CSV: {output_file}")
+            scr_log.info(f"Appended to CSV: {output_file}")
         else:
             df.to_csv(output_file, index=False)
-            print(f"Overwriting to CSV: {output_file}")
+            scr_log.info(f"Overwriting to CSV: {output_file}")
+
+    def clear_json(self, file_name):
+        data_dir = self.root_path / "data" / "raw"
+        output_file = data_dir / f"{file_name}.json"
+
+        if output_file.exists():
+            output_file.write_text(
+                json.dumps([], indent=2),
+                encoding="utf-8-sig"
+            )
+            scr_log.info(f"cleared :  {output_file}")
+        else:
+            scr_log.warning(f"File not found to clear: {output_file}")
 
     def store_json(self, data, file_name):
         data_dir = self.root_path / "data" / "raw"
@@ -98,7 +115,7 @@ class BaseScraper:
                     new = data
 
             except Exception as e:
-                print(f"error in storing json : {e}")
+                scr_log.exception(f"error in storing json : {e}")
                 new = data
         else:
             new = data
@@ -110,10 +127,10 @@ class BaseScraper:
 
     async def store_db_v1(self , dic_list):
         ids = await asyncio.to_thread(self.listing_db.insert_data,dic_list)
-        print(f"Inserted {len(ids)} new rows , skipped {len(dic_list) - len(ids)} duplicates.")
+        scr_log.info(f"Inserted {len(ids)} new rows , skipped {len(dic_list) - len(ids)} duplicates.")
         return ids
 
     async def store_image(self,listing_id,urls):
         ids = await asyncio.to_thread(self.image_db.insert_ima_url,listing_id,urls)
-        print(f"Inserted {len(ids)} new rows into image db .")
+        scr_log.info(f"Inserted {len(ids)} new rows into image db .")
         return ids

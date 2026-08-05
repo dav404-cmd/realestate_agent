@@ -8,7 +8,7 @@ from manage_db.image_db_manager import ImageDb
 
 from utils.logger import get_logger
 
-res_updater = get_logger("RealEstateUpdater")
+res_updater = get_logger("RealEstateUpdater","scraper")
 
 db = DbManagerV1(table_name="jp_realestate_v1")
 db_img = ImageDb()

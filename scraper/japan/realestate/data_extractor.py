@@ -3,7 +3,7 @@ import asyncio
 
 from utils.logger import get_logger
 
-res_log = get_logger("RealestateExtractor")
+res_log = get_logger("RealestateExtractor","scraper")
 
 import asyncio
 import re
