@@ -4,6 +4,11 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
 
+from utils.logger import get_logger
+
+image_log = get_logger("ImageDb","db_management")
+
+
 load_dotenv()
 
 class ImageDb:
@@ -52,6 +57,7 @@ class ImageDb:
             cur.execute(unique_index)
 
         self.conn.commit()
+        image_log.info("created jp_realestate_image table")
 
     def insert_ima_url(self,listing_id,urls_pack):
         _id = []
@@ -68,6 +74,7 @@ class ImageDb:
             if row:
                 _id.append(row["id"])
         self.conn.commit()
+        image_log.info(f"inserted {len(_id)} images for {listing_id}.")
         return _id
 
     def get_images(self,_id):
@@ -122,6 +129,7 @@ class ImageDb:
         """
         self.cursor.execute(query)
         self.conn.commit()
+        image_log.critical("reset jp_realestate_image")
 
     def has_image(self,listing_id) -> bool:
         query = """

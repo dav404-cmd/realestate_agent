@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 from utils.logger import get_logger
 
-agent_log = get_logger("AgentMemory")
+agent_log = get_logger("AgentMemory","db_management")
 
 load_dotenv()
 

@@ -14,7 +14,7 @@ load_dotenv()
 
 from utils.logger import get_logger
 
-llm_log = get_logger("RunTime")
+llm_log = get_logger("RunTime","agent")
 
 class MultiLLm:
     def __init__(self,models):

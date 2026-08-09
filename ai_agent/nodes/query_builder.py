@@ -4,7 +4,9 @@ from manage_db.db_manager_v1 import DbManagerV1
 
 #for test
 from ai_agent.llm_wrappers import OpenRouterLLM
+from utils.logger import get_logger
 
+query_log = get_logger("QueryBuilder","agent")
 
 db = DbManagerV1(table_name="jp_realestate_v1")
 
@@ -88,8 +90,8 @@ def make_query_builder(llm):
             state.extracted_filters = json.loads(raw)
 
         except Exception as e:
-            print("RAW:", repr(raw))
-            print("ERROR:", e)
+            query_log.info("RAW:", repr(raw))
+            query_log.exception("ERROR:", e)
             state.extracted_filters = {}
 
         return state

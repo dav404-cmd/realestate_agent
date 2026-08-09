@@ -1,5 +1,5 @@
 from ai_agent.state import AgentState
-from ai_agent.llm_wrappers import BytezLLM
+
 
 INTENT_ROUTER_SYSTEM = """
     Classify the user's intent.
@@ -27,16 +27,3 @@ def make_intent_router(llm):
 
 def route_by_intent(state: AgentState) -> str:
     return state.intent or "chat"
-
-
-if __name__ == "__main__":
-    state = AgentState(
-        user_input="i want to buy a house",
-    )
-    llm = BytezLLM("Qwen/Qwen3-4B-Instruct-2507")
-    router = make_intent_router(llm)
-    state1 = router(state)
-    print(state1.intent)
-
-    answer = route_by_intent(state1)
-    print(answer)

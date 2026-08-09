@@ -12,7 +12,7 @@ from utils.logger import get_logger
 
 from manage_db.user_db_manager import UserDbManager
 
-oauth_log = get_logger("OauthLog")
+oauth_log = get_logger("OauthLog","api")
 
 # --initial setup--
 load_dotenv()

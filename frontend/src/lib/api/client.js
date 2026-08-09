@@ -13,6 +13,7 @@ import { PUBLIC_API_BASE } from '$env/static/public';
 const BASE_URL = PUBLIC_API_BASE || 'http://localhost:8000';
 
 export class ApiError extends Error {
+	// @ts-ignore
 	constructor(message, { status, detail } = {}) {
 		super(message);
 		this.name = 'ApiError';

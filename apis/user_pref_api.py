@@ -3,7 +3,7 @@ from utils.logger import get_logger
 
 from manage_db.user_pref_db_manager import UserPreference , Preference
 
-api_log = get_logger("UserPref")
+api_log = get_logger("UserPref","api")
 
 router = APIRouter()
 

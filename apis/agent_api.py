@@ -9,7 +9,7 @@ from ai_agent.agent import reduce_state
 from utils.logger import get_logger
 
 
-api_log = get_logger("AgentApi")
+api_log = get_logger("AgentApi","api")
 router = APIRouter()
 
 #todo : update with new version

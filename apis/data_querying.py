@@ -13,7 +13,7 @@ from manage_db.query import PropertyQuery ,query_property
 from utils.logger import get_logger
 
 router = APIRouter()
-api_log = get_logger("API_log")
+api_log = get_logger("API_log","api")
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):

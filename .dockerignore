@@ -1,0 +1,17 @@
+#Ignore Python cache
+__pycache__/
+*.py[cod]
+
+.venv/
+.idea
+
+#Ignore environment files
+.env
+
+.git
+
+tests
+ml_analysis/notebooks
+ml_analysis/model
+
+legacy/
