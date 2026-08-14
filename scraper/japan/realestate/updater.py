@@ -4,15 +4,17 @@ from scraper.japan.realestate.xpaths import EXPIRED
 from scraper.core.base_scraper import BaseScraper
 
 from manage_db.db_manager_v1 import DbManagerV1
-from manage_db.image_db_manager import ImageDb
 
 from utils.logger import get_logger
 
 res_updater = get_logger("RealEstateUpdater","scraper")
 
-db = DbManagerV1(table_name="jp_realestate_v1")
-db_img = ImageDb()
 class UpdateRealEstate(BaseScraper):
+    
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.db = DbManagerV1(table_name="jp_realestate_v1")
+        
     async def update_card(self,listing_ids,urls,start_browser = True):
         if start_browser:
             await self.start_browser()
@@ -32,12 +34,12 @@ class UpdateRealEstate(BaseScraper):
                 element = await page.query_selector(EXPIRED)
                 if element:
                     res_updater.info(f"{index} Expired message detected : {url}")
-                    db.update_status(listing_id,"expired")
+                    self.db.update_status(listing_id,"expired")
                 else:
-                    db.update_status(listing_id, "active")
+                    self.db.update_status(listing_id, "active")
                     res_updater.info(f"{index} is live")
 
-                db.update_last_update(listing_id) #todo: update data in update_status
+                self.db.update_last_update(listing_id) #todo: update data in update_status
 
             except Exception as e:
                 res_updater.exception(f"Error during update:{e}")
@@ -56,10 +58,10 @@ class UpdateRealEstate(BaseScraper):
         )
 
         if start_browser:
-            db.close_conn()
+            self.db.close_conn()
             await self.close_browser()
 
-    async def continuous_update(self, interval_sec=300):
+    async def continuous_update(self, interval_sec=300,batch_wise = True , max_batches = 1):
         await self.start_browser()
 
         BATCH_SIZE = 100
@@ -67,7 +69,7 @@ class UpdateRealEstate(BaseScraper):
             while True:
                 res_updater.info("Starting update cycle")
 
-                df = db.get_active_ids()
+                df = self.db.get_active_ids()
 
                 #make urls
                 df["source_listing_id"] = df["source_listing_id"].apply(lambda ids : f"https://realestate.co.jp/en/forsale/view/{ids}")
@@ -75,8 +77,10 @@ class UpdateRealEstate(BaseScraper):
                 listing_ids = df["id"].tolist()
                 urls = df["source_listing_id"].tolist()
 
-                if not listing_ids or not urls:
+                if not listing_ids or not urls: #todo:maybe close the updater
                     res_updater.warning("No active listing found")
+                    if batch_wise:
+                        break
                     await asyncio.sleep(interval_sec)
                     continue
 
@@ -89,12 +93,17 @@ class UpdateRealEstate(BaseScraper):
                         start_browser=False
                     )
 
-                    db.conn.commit()
+                    self.db.conn.commit()
+
+                    batch_number = start // BATCH_SIZE + 1
 
                     res_updater.info(
-                        f"Finished batch {start // BATCH_SIZE + 1} "
+                        f"Finished batch {batch_number} "
                         f"({start}-{end - 1})"
                     )
+                    if batch_wise and batch_number >= max_batches:
+                        res_updater.info(f"Stopped the updater after {batch_number}")
+                        break
 
                 await asyncio.sleep(interval_sec)
 
@@ -104,11 +113,11 @@ class UpdateRealEstate(BaseScraper):
             res_updater.exception(f"Error {e}")
 
         finally:
-            db.close_conn()
+            self.db.close_conn()
             await self.close_browser()
 
 
 if __name__ == "__main__":
     updater = UpdateRealEstate(None,None)
-    task = updater.continuous_update()
+    task = updater.continuous_update(batch_wise=False)
     asyncio.run(task)

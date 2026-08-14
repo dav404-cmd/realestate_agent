@@ -4,6 +4,7 @@ from apis.data_querying import router as query_router
 from apis.auth import router as auth_router
 from apis.agent_api import router as agent_router
 from apis.user_pref_api import router as pref_router
+from apis.scrapers_api import router as scraper_router
 
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -30,3 +31,4 @@ app.include_router(query_router,prefix="/query")
 app.include_router(auth_router,prefix="/auth")
 app.include_router(agent_router,prefix="/agent")
 app.include_router(pref_router,prefix="/pref")
+app.include_router(scraper_router,prefix="/scraper")

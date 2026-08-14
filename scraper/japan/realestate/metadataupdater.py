@@ -11,11 +11,13 @@ from utils.logger import get_logger
 
 res_updater = get_logger("RealEstateDataUpdater","scraper")
 
-db = DbManagerV1(table_name="jp_realestate_v1")
-db_img = ImageDb()
-
-
 class MetaDataUpdater(BaseScraper):
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.db = DbManagerV1(table_name="jp_realestate_v1")
+        self.db_img = ImageDb()
+
     async def update_card(self,listing_ids,urls,image_ids,start_browser = True): #todo : fix the image extraction .
         if start_browser:
             await self.start_browser()
@@ -41,16 +43,16 @@ class MetaDataUpdater(BaseScraper):
                 element = await page.query_selector(EXPIRED)
                 if element:
                     res_updater.info(f"{index} Expired message detected : {url}")
-                    db.update_status(listing_id,"expired")
-                    db.update_last_update(listing_id)
+                    self.db.update_status(listing_id,"expired")
+                    self.db.update_last_update(listing_id)
                     return
                 else:
-                    db.update_status(listing_id, "active")
+                    self.db.update_status(listing_id, "active")
                     res_updater.info(f"{index} is live")
 
                     new_data = await extract_static_dom_data(page)
 
-                    db.update_listing(listing_id,new_data)
+                    self.db.update_listing(listing_id,new_data)
 
                     if listing_id not in image_ids:
                         try:
@@ -59,10 +61,10 @@ class MetaDataUpdater(BaseScraper):
                             res_updater.info(f"{listing_id} has no gallery")
 
                         images = await extract_images_via_overlay(page) #todo: update data in update_status
-                        db_img.insert_ima_url(listing_id,images)
+                        self.db_img.insert_ima_url(listing_id,images)
                         res_updater.info(f"found image for {index}")
 
-                db.update_last_update(listing_id)
+                self.db.update_last_update(listing_id)
 
             except Exception as e:
                 res_updater.exception(f"Error during update:{e}")
@@ -81,10 +83,10 @@ class MetaDataUpdater(BaseScraper):
         )
 
         if start_browser:
-            db.close_conn()
+            self.db.close_conn()
             await self.close_browser()
 
-    async def continuous_update(self, interval_sec=300):
+    async def continuous_update(self, interval_sec=300,batch_wise = True , max_batches = 1):
         await self.start_browser()
 
         BATCH_SIZE = 100
@@ -93,8 +95,8 @@ class MetaDataUpdater(BaseScraper):
             while True:
                 res_updater.info("Starting update cycle")
 
-                df = db.get_active_ids_metadata()
-                image_ids = db_img.get_listing_ids_with_images()
+                df = self.db.get_active_ids_metadata()
+                image_ids = self.db_img.get_listing_ids_with_images()
 
                 #make urls
                 df["source_listing_id"] = df["source_listing_id"].apply(lambda ids : f"https://realestate.co.jp/en/forsale/view/{ids}")
@@ -104,6 +106,8 @@ class MetaDataUpdater(BaseScraper):
 
                 if not listing_ids or not urls:
                     res_updater.warning("No active listing found")
+                    if batch_wise:
+                        break
                     await asyncio.sleep(interval_sec)
                     continue
 
@@ -117,12 +121,20 @@ class MetaDataUpdater(BaseScraper):
                         start_browser=False
                     )
 
-                    db.conn.commit()
+                    self.db.conn.commit()
+
+                    batch_number = start // BATCH_SIZE + 1
 
                     res_updater.info(
-                        f"Finished batch {start // BATCH_SIZE + 1} "
+                        f"Finished batch {batch_number} "
                         f"({start}-{end - 1})"
                     )
+
+                    if batch_wise and batch_number >= max_batches:
+                        if batch_wise and batch_number >= max_batches:
+                            res_updater.info(f"Stopped the updater after {batch_number}")
+                            break
+
 
                 res_updater.info("Update cycle completed.")
                 await asyncio.sleep(interval_sec)
@@ -133,7 +145,7 @@ class MetaDataUpdater(BaseScraper):
             res_updater.exception(f"Error {e}")
 
         finally:
-            db.close_conn()
+            self.db.close_conn()
             await self.close_browser()
 
 if __name__ == "__main__":
