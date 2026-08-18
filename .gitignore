@@ -24,3 +24,5 @@ legacy/
 !ml_analysis/models/catboost_real_estate.cbm
 
 logs/
+
+airflow/plugins

@@ -190,7 +190,8 @@ class DbManagerV1: #todo : remove table_name and add logging.
         SELECT id,source_listing_id 
         FROM {self.table_name}
         WHERE status = 'active'
-        AND last_metadata_update < NOW() - INTERVAL '5 days';
+        AND last_metadata_update < NOW() - INTERVAL '5 days'
+        ORDER BY last_metadata_update ASC;
         """
 
         engine = self.get_db_engine()
@@ -203,25 +204,13 @@ class DbManagerV1: #todo : remove table_name and add logging.
         SELECT id,source_listing_id 
         FROM {self.table_name}
         WHERE status = 'active'
-        AND last_update < NOW() - INTERVAL '24 hours';
+        AND last_update < NOW() - INTERVAL '24 hours'
+        ORDER BY last_update ASC;
         """
         # todo : think the time though .
 
         engine = self.get_db_engine()
         df = pd.read_sql(query,engine)
-
-        return df
-
-    def get_ids_to_update(self):
-        query = f"""
-                SELECT id,source_listing_id 
-                FROM jp_realestate_v1
-                WHERE status = 'active'
-                AND last_metadata_update < NOW() - INTERVAL '3 days';
-                """
-
-        engine = self.get_db_engine()
-        df = pd.read_sql(query, engine)
 
         return df
 

@@ -32,3 +32,37 @@ services:
       - backend
 
     restart: unless-stopped
+
+  airflow-db:
+    image: postgres:17
+    container_name: realestate-airflow-db
+
+    environment:
+      POSTGRES_USER : airflow
+      POSTGRES_PASSWORD : airflow
+      POSTGRES_DB : airflow
+
+    volumes:
+      - airflow-db-data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+  airflow:
+    image: apache/airflow:3.0.6-python3.11
+    container_name: realestate_airflow
+    depends_on:
+      - airflow-db
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    ports:
+      - "8081:8080"
+
+    command: standalone
+    restart: unless-stopped
+
+volumes:
+  airflow-db-data:

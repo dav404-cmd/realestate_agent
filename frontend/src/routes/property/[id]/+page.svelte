@@ -15,9 +15,7 @@ let listing = null;
 
 $: data = listing?.data ?? {};
 $: allImages = Array.isArray(listing?.images) ? listing.images : [];
-$: layoutImage = allImages.find((img) => img.image_order === 0) ?? null;
 $: galleryImages = allImages
-	.filter((img) => img.image_order !== 0)
 	.sort((a, b) => a.image_order - b.image_order);
 $: sourceUrl = listing ? getListingUrl(listing.source_listing_id, listing.source) : null;
 
@@ -107,15 +105,6 @@ $: sourceUrl = listing ? getListingUrl(listing.source_listing_id, listing.source
 				{/each}
 			</dl>
 		</div>
-
-		{#if layoutImage}
-			<div class="floorplan">
-				<h2>Floor plan</h2>
-				<div class="floorplan-frame">
-					<ImageGallery images={[layoutImage]} alt={`${data.building_name ?? 'Listing'} floor plan`} />
-				</div>
-			</div>
-		{/if}
 
 		{#if data.building_description}
 			<div class="description">

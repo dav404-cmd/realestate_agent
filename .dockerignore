@@ -15,3 +15,6 @@ ml_analysis/notebooks
 ml_analysis/model
 
 legacy/
+
+airflow/logs
+airflow/plugins
