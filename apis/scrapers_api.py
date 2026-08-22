@@ -85,7 +85,7 @@ async def update_status_af(
 ):
     scp_log.info("Starting Airflow status update")
 
-    status_updater = UpdateRealEstate()
+    status_updater = UpdateRealEstate(None,None)
 
     await status_updater.continuous_update(
         batch_wise=batch_wise,
@@ -109,7 +109,7 @@ async def update_metadata_af(
 ):
     scp_log.info("Starting Airflow metadata update")
 
-    metadata_updater = MetaDataUpdater()
+    metadata_updater = MetaDataUpdater(None,None)
 
     await metadata_updater.continuous_update(
         batch_wise=batch_wise,

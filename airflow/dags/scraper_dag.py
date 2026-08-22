@@ -39,6 +39,7 @@ with DAG(
     description="Runs scraper through the backend API",
     schedule="@daily",
     catchup=False,
+    max_active_runs=1,
 ) as dag:
 
     scrape_task = PythonOperator(
@@ -48,4 +49,5 @@ with DAG(
             "max_page": 5,
             "building_type": None,
         },
+        max_active_tis_per_dag=1,
     )

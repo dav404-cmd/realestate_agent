@@ -1,20 +1,20 @@
 from ai_agent.state import AgentState
 import json
 from manage_db.db_manager_v1 import DbManagerV1
+from ai_agent.normalize_query import normalize_value, normalize_location
 
 #for test
-from ai_agent.llm_wrappers import OpenRouterLLM
+from ai_agent.llm_wrappers import OpenRouterLLM,GloqLLM
 from utils.logger import get_logger
 
 query_log = get_logger("QueryBuilder","agent")
 
 db = DbManagerV1(table_name="jp_realestate_v1")
 
-#todo : integrate with live data from db .
 CANONICAL = {
-  "zoning": ["Residential", "Commercial"],
-  "structure": ["Wood", "Steel Frame","Reinforced Concrete"],
-  "occupancy": ["Vacant", "Occupied"]
+  "zoning": [row[0] for row in db.get_options("zoning")],
+  "structure": [row[0] for row in db.get_options("structure")],
+  "occupancy": [row[0] for row in db.get_options("occupancy")]
 }
 
 NUMERIC_PROFILE = {
@@ -23,9 +23,13 @@ NUMERIC_PROFILE = {
 }
 
 CATEGORICAL_FORMAT = {
-    "prefecture" : "Free text, example : tokyo",
+    "prefecture" : "Free text, example : Tokyo",
+    "city" : "Free text, example : Kawasaki-shi Asao-ku",
+    "district" : "Free text, example : Higashiyurigaoka "
 }
 
+LOCATION = ["prefecture","city","district"] #for later
+TEXT_BASED_KEYS = ["zoning","structure","occupancy"]
 
 QUERY_BUILDER_SYSTEM = """
 You extract structured property search filters from user input.
@@ -59,6 +63,8 @@ Allowed fields:
 - structure
 - occupancy
 - prefecture 
+- city
+- district
 """
 
 
@@ -87,11 +93,41 @@ def make_query_builder(llm):
                 raw = raw.replace("```", "")
                 raw = raw.strip()
 
-            state.extracted_filters = json.loads(raw)
+            json_query = json.loads(raw)
+            for key in TEXT_BASED_KEYS:
+                json_query[key] = normalize_value(
+                    json_query.get(key),
+                    CANONICAL[key]
+                )
+
+            for key in LOCATION:
+                value = json_query.get(key)
+                if not value:
+                    continue
+
+                result = normalize_location(
+                    key = key,
+                    value=value,
+                    valid_keys= LOCATION,
+                    db_conn=db
+                )
+
+                if result is None:
+                    json_query[key] = None
+                    continue
+
+                matched_key, matched_value = result
+
+                if matched_key != key:
+                    json_query[key] = None
+
+                json_query[matched_key] = matched_value
+
+            state.extracted_filters = json_query
 
         except Exception as e:
-            query_log.info("RAW:", repr(raw))
-            query_log.exception("ERROR:", e)
+            query_log.info(f"RAW: {raw}")
+            query_log.exception(f"ERROR: {e}")
             state.extracted_filters = {}
 
         return state
@@ -102,7 +138,7 @@ if __name__ == "__main__":
         user_input="i want to buy a house of around 150 mil , with steel structure that is vacant in Kanagawa,Minato-ku",
         intent="property_search",
     )
-    llm = OpenRouterLLM("openrouter/owl-alpha")
+    llm = GloqLLM("openai/gpt-oss-120b")
 
     query_maker = make_query_builder(llm)
     query = query_maker(state)

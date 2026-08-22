@@ -133,7 +133,7 @@ class MetaDataUpdater(BaseScraper):
                     if batch_wise and batch_number >= max_batches:
                         if batch_wise and batch_number >= max_batches:
                             res_updater.info(f"Stopped the updater after {batch_number}")
-                            break
+                            return
 
 
                 res_updater.info("Update cycle completed.")

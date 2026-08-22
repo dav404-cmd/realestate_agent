@@ -103,7 +103,8 @@ class UpdateRealEstate(BaseScraper):
                     )
                     if batch_wise and batch_number >= max_batches:
                         res_updater.info(f"Stopped the updater after {batch_number}")
-                        break
+                        return
+
 
                 await asyncio.sleep(interval_sec)
 
@@ -119,5 +120,5 @@ class UpdateRealEstate(BaseScraper):
 
 if __name__ == "__main__":
     updater = UpdateRealEstate(None,None)
-    task = updater.continuous_update(batch_wise=False)
+    task = updater.continuous_update()
     asyncio.run(task)
