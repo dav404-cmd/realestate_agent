@@ -3,6 +3,8 @@
 fastapi==0.125.0
 uvicorn[standard]==0.38.0
 
+httpx == 0.27.2
+
 # Authentication / Security
 Authlib==1.6.9
 python-dotenv==1.2.2

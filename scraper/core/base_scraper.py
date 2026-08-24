@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import os
 
+from scraper.core.proxy_manager import ProxyManager
 from manage_db.db_manager_v1 import DbManagerV1
 from manage_db.image_db_manager import ImageDb
 
@@ -24,9 +25,23 @@ class BaseScraper:
 
         self.listing_db = DbManagerV1(table_name,source)
         self.image_db = ImageDb()
+        self.proxy_manager = ProxyManager()
 
-    async def start_browser(self):
+    @staticmethod
+    async def block_unnecessary(route):
+        if route.request.resource_type in {
+            "image",
+            "font",
+            "media",
+        }:
+            await route.abort()
+        else:
+            await route.continue_()
+
+    async def start_browser(self,proxy_mode=False):
+        #default no proxy for now
         self.playwright = await async_playwright().start()
+
         # Keep headless False so Playwright loads a full browser profile,
         # but use chrome args to natively hide the visual window.
         launch_args = {
@@ -36,15 +51,39 @@ class BaseScraper:
                 "--disable-blink-features=AutomationControlled"  # Removes basic automation flags
             ]
         }
+
+        verified_proxy = None
+
+        if proxy_mode:
+            scr_log.info("Proxy mode active. Verifying Webshare proxy credentials...")
+            verified_proxy = await self.proxy_manager.verify_proxy()
+
+            if not verified_proxy:
+                scr_log.warning("Proxy verification failed! Falling back to your local IP address.")
+
         self.browser = await self.playwright.chromium.launch(**launch_args)
+
+        context_args = {
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            "viewport": {"width": 1920, "height": 1080},
+            "device_scale_factor": 1,
+            "is_mobile": False,
+            "has_touch": False,
+            "ignore_https_errors": True
+        }
+
         # Match your viewport and extra headers to look completely like a real desktop
-        self.context = await self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            viewport={"width": 1920, "height": 1080},
-            device_scale_factor=1,
-            is_mobile=False,
-            has_touch=False,
-            ignore_https_errors=True
+        if verified_proxy:
+            context_args["proxy"] = verified_proxy
+            # Align locale with proxy region to stop anti-bot leaks
+            context_args["locale"] = "ja-JP"
+            context_args["timezone_id"] = "Asia/Tokyo"
+
+
+        self.context = await self.browser.new_context(**context_args)
+        await self.context.route(
+            "**/*",
+            self.block_unnecessary
         )
         self.main_page = await self.context.new_page()
 

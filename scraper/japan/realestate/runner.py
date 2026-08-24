@@ -20,7 +20,7 @@ class RealestateScraperRunner:
 
     # The main runner function.
     async def run(self,building_type = None,max_pages = 1):  #None = all property
-        await self.scraper.start_browser()
+        await self.scraper.start_browser(proxy_mode=True)
 
         page_no = 1
         previous_ids = None
