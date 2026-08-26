@@ -4,6 +4,7 @@ from airflow.operators.python import PythonOperator
 from datetime import timedelta
 
 import requests
+import os
 
 default_args = {
     'owner': 'admin',
@@ -23,6 +24,7 @@ def status_updater(batch_wise:bool, max_batch:int):
 
     response = requests.post(
         "http://backend:8000/scraper/status_update_af",
+        headers={"Authorization": f"Bearer {os.environ['SCRAPER_API_KEY']}"},
         json=payload,
         timeout=60*20,
     )
@@ -43,6 +45,7 @@ def metadata_updater(batch_wise:bool, max_batch:int):
 
     response = requests.post(
         "http://backend:8000/scraper/metadata_update_af",
+        headers={"Authorization": f"Bearer {os.environ['SCRAPER_API_KEY']}"},
         json=payload,
         timeout=60*30,
     )
@@ -59,6 +62,7 @@ with DAG(
     description="Runs status update through the backend API",
     schedule="@daily",
     catchup=False,
+    max_active_runs=1,
 ) as status_dag:
 
     status_update_task = PythonOperator(
@@ -68,6 +72,7 @@ with DAG(
             "batch_wise": True,
             "max_batch": 1,
         },
+        max_active_tis_per_dag=1,
     )
 
 with DAG(
@@ -76,6 +81,7 @@ with DAG(
     description="Runs metadata update through the backend API",
     schedule="0 0 */3 * *",
     catchup=False,
+    max_active_runs=1,
 ) as metadata_dag:
 
     metadata_update_task = PythonOperator(
@@ -85,4 +91,5 @@ with DAG(
             "batch_wise": True,
             "max_batch": 1,
         },
+        max_active_tis_per_dag=1,
     )

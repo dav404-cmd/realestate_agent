@@ -4,6 +4,7 @@ from airflow.operators.python import PythonOperator
 from datetime import timedelta
 
 import requests
+import os
 
 default_args = {
     'owner': 'admin',
@@ -23,8 +24,9 @@ def scrape_listing(max_page: int, building_type=None):
 
     response = requests.post(
         "http://backend:8000/scraper/scrape_listing_af",
+        headers={"Authorization": f"Bearer {os.environ['SCRAPER_API_KEY']}"},
         json=payload,
-        timeout=600,
+        timeout=60*max_page+60,
     )
 
     response.raise_for_status()

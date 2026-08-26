@@ -1,6 +1,9 @@
 import asyncio
+import os
+from dotenv import load_dotenv
 
-from fastapi import APIRouter, BackgroundTasks,status
+from fastapi import APIRouter, BackgroundTasks,status, Header, HTTPException, Depends
+from fastapi.security import HTTPBearer,HTTPAuthorizationCredentials
 
 from scraper.japan.realestate.runner import RealestateScraperRunner
 from scraper.japan.realestate.updater import UpdateRealEstate
@@ -8,11 +11,35 @@ from scraper.japan.realestate.metadataupdater import MetaDataUpdater
 
 from utils.logger import get_logger
 
+load_dotenv()
 scp_log = get_logger("ScraperApi" , "api")
 router = APIRouter()
 
-@router.post("/scrape_listing",status_code=status.HTTP_202_ACCEPTED)
-def scrape_listing(background_task : BackgroundTasks, building_type=None,max_page: int = 5):
+# __ ACCESS VERIFICATION __
+security = HTTPBearer()
+
+def verify_scraper_key(
+        authorization: HTTPAuthorizationCredentials = Depends(security)
+):
+
+    if not authorization.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Missing Authorization Header"
+        )
+
+    key = os.getenv("SCRAPER_API_KEY")
+    if authorization.credentials != key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="INVALID API KEY"
+        )
+    return True
+
+# __ END POINTS __
+
+@router.post("/scrape_listing",status_code=status.HTTP_202_ACCEPTED , dependencies=[Depends(verify_scraper_key)])
+def scrape_listing(background_task : BackgroundTasks, building_type: str | None = None,max_page: int = 5):
     scp_log.info(f"starting scraper with args building type = {building_type} , max_page = {max_page}")
     scraper = RealestateScraperRunner()
 
@@ -24,7 +51,7 @@ def scrape_listing(background_task : BackgroundTasks, building_type=None,max_pag
     background_task.add_task(run_scraper)
     return {"message" : "scraper started in the background."}
 
-@router.post("/status_update",status_code=status.HTTP_202_ACCEPTED)
+@router.post("/status_update",status_code=status.HTTP_202_ACCEPTED , dependencies=[Depends(verify_scraper_key)])
 def update_status(background_task : BackgroundTasks ,batch_wise:bool=True ,max_batches : int = 1):
     scp_log.info("starting status update")
     status_updater = UpdateRealEstate()
@@ -37,7 +64,7 @@ def update_status(background_task : BackgroundTasks ,batch_wise:bool=True ,max_b
     return {"message":"status updater started in the background"}
 
 
-@router.post("/metadata_update", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/metadata_update", status_code=status.HTTP_202_ACCEPTED , dependencies=[Depends(verify_scraper_key)])
 def update_metadata(background_task: BackgroundTasks, batch_wise: bool = True, max_batches: int = 1):
     scp_log.info("starting metadata update")
     status_updater = MetaDataUpdater()
@@ -51,9 +78,9 @@ def update_metadata(background_task: BackgroundTasks, batch_wise: bool = True, m
     return {"message": "metadata updater started in the background"}
 
 # --For airflow--
-@router.post("/scrape_listing_af", status_code=status.HTTP_200_OK)
+@router.post("/scrape_listing_af", status_code=status.HTTP_200_OK , dependencies=[Depends(verify_scraper_key)])
 async def scrape_listing_af(
-    building_type=None,
+    building_type: str | None = None,
     max_page: int = 5
 ):
     scp_log.info(
@@ -78,7 +105,7 @@ async def scrape_listing_af(
     }
 
 
-@router.post("/status_update_af", status_code=status.HTTP_200_OK)
+@router.post("/status_update_af", status_code=status.HTTP_200_OK , dependencies=[Depends(verify_scraper_key)])
 async def update_status_af(
     batch_wise: bool = True,
     max_batches: int = 1
@@ -102,7 +129,7 @@ async def update_status_af(
     }
 
 
-@router.post("/metadata_update_af", status_code=status.HTTP_200_OK)
+@router.post("/metadata_update_af", status_code=status.HTTP_200_OK , dependencies=[Depends(verify_scraper_key)])
 async def update_metadata_af(
     batch_wise: bool = True,
     max_batches: int = 1
