@@ -45,7 +45,10 @@ class PropertyQuery(BaseModel):
     prefecture : Optional[str] = None
     city : Optional[str] = None
     district : Optional[str] = None
+
     limit: int = 20
+    page: int = 1
+
     sort_by: str = "price_yen"
     sort_order: str = "asc"
 
@@ -129,9 +132,10 @@ def build_property_query(q : PropertyQuery,table_name : str ):
 
     query += sql.SQL(" ORDER BY ")
     query += sql.SQL(",").join(order_clauses)
-    query += sql.SQL(" LIMIT %(limit)s")
+    query += sql.SQL(" LIMIT %(limit)s OFFSET %(offset)s")
 
     params["limit"] = q.limit
+    params["offset"] = (q.page - 1) * q.limit
 
     return query,params
 

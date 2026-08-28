@@ -1,16 +1,13 @@
 <script>
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { getColumnOptions } from '../api/query.js';
+	import { getCachedOptions } from '../utils/optionsCache.js';
 
-	/** Existing Preference row, or null for a brand-new user. */
 	export let initial = null;
 	export let submitLabel = 'Save';
 	export let saving = false;
 
 	const dispatch = createEventDispatcher();
 
-	// Fields with no server-driven options use simple text inputs — the
-	// column is free-text on the backend, these are just hints.
 	const USER_TYPE_OPTIONS = ['investor', 'buyer', 'agent'];
 	const PROPERTY_TYPE_SUGGESTIONS = ['House', 'Land', 'Apartment', 'Mansion'];
 	const INVESTMENT_GOAL_SUGGESTIONS = ['rental_apartment', 'resell'];
@@ -45,10 +42,8 @@
 
 	let optionCache = {};
 	async function loadOptions(column) {
-		if (optionCache[column]) return;
 		try {
-			const res = await getColumnOptions(column);
-			optionCache = { ...optionCache, [column]: res.options || [] };
+			optionCache = { ...optionCache, [column]: await getCachedOptions(column) };
 		} catch {
 			optionCache = { ...optionCache, [column]: [] };
 		}

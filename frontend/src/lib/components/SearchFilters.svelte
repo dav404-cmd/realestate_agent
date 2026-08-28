@@ -1,7 +1,7 @@
 <script>
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { filters, defaultFilters } from '../stores/search.js';
-	import { getColumnOptions } from '../api/query.js';
+	import { getCachedOptions } from '../utils/optionsCache.js';
 
 	const dispatch = createEventDispatcher();
 
@@ -15,15 +15,11 @@
 	];
 
 	async function loadOptions(column) {
-		if (optionCache[column]) return optionCache[column];
 		try {
-			const res = await getColumnOptions(column);
-			optionCache[column] = res.options || [];
+			optionCache = { ...optionCache, [column]: await getCachedOptions(column) };
 		} catch {
-			optionCache[column] = [];
+			optionCache = { ...optionCache, [column]: [] };
 		}
-		optionCache = optionCache; // eslint-disable-line no-self-assign
-		return optionCache[column];
 	}
 
 	onMount(() => {

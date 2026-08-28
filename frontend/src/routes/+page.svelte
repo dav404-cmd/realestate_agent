@@ -1,30 +1,76 @@
 <script>
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
+	import { page as pageStore } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import SearchFilters from '$lib/components/SearchFilters.svelte';
 	import PropertyCard from '$lib/components/PropertyCard.svelte';
 	import CardSkeleton from '$lib/components/CardSkeleton.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
+	import Pagination from '$lib/components/Pagination.svelte';
 	import { filters, results, searchStatus, searchError } from '$lib/stores/search.js';
 	import { searchProperties } from '$lib/api/query.js';
 
-	async function runSearch() {
+	let currentPage = 1;
+	let initialized = false;
+	let requestSeq = 0;
+
+	function pageFromUrl(url) {
+		const n = Number(url.searchParams.get('page'));
+		return Number.isFinite(n) && n > 0 ? n : 1;
+	}
+
+	async function runSearch(pageNum) {
+		const seq = ++requestSeq;
+		currentPage = pageNum;
 		$searchStatus = 'loading';
 		$searchError = null;
 		try {
 			const query = Object.fromEntries(
-				Object.entries($filters).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+				Object.entries({ ...$filters, page: pageNum }).filter(
+					([, v]) => v !== '' && v !== null && v !== undefined
+				)
 			);
 			const data = await searchProperties(query);
+			if (seq !== requestSeq) return;
 			$results = Array.isArray(data) ? data : [];
 			$searchStatus = 'ready';
 		} catch (err) {
+			if (seq !== requestSeq) return;
 			$searchError = err.message || 'Something went wrong while searching.';
 			$searchStatus = 'error';
 		}
 	}
 
-	onMount(runSearch);
+	function goToPage(n) {
+		if (n < 1) return;
+		const url = new URL($pageStore.url);
+		url.searchParams.set('page', n);
+		goto(url, { keepFocus: true, noScroll: false });
+	}
+
+	function handleFilterSearch() {
+		const isAlreadyPage1 = pageFromUrl($pageStore.url) === 1;
+		const url = new URL($pageStore.url);
+		url.searchParams.set('page', 1);
+		goto(url, { keepFocus: true, noScroll: false });
+		if (isAlreadyPage1) {
+			// goto() won't change the URL in this case, so the watcher below
+			// never fires — fetch directly instead.
+			runSearch(1);
+		}
+	}
+
+	$: if (browser) {
+		const urlPage = pageFromUrl($pageStore.url);
+		if (!initialized || urlPage !== currentPage) {
+			initialized = true;
+			runSearch(urlPage);
+		}
+	}
+
+	$: hasNext = $results.length >= ($filters.limit ?? 24);
 </script>
 
 <svelte:head>
@@ -41,7 +87,7 @@
 </section>
 
 <section class="filter-bar container">
-	<SearchFilters on:search={runSearch} />
+	<SearchFilters on:search={handleFilterSearch} />
 </section>
 
 <section class="results container">
@@ -67,6 +113,7 @@
 				</div>
 			{/each}
 		</div>
+		<Pagination page={currentPage} {hasNext} disabled={$searchStatus === 'loading'} on:change={(e) => goToPage(e.detail)} />
 	{/if}
 </section>
 
