@@ -37,6 +37,9 @@ services:
     image: postgres:17
     container_name: realestate-airflow-db
 
+    profiles:
+      - airflow
+
     environment:
       POSTGRES_USER : airflow
       POSTGRES_PASSWORD : airflow
@@ -51,6 +54,12 @@ services:
     image: apache/airflow:3.0.6-python3.11
     container_name: realestate_airflow
 
+    profiles:
+      - airflow
+
+    command:
+      - standalone
+
     env_file:
       - ./airflow/.env
     depends_on:
@@ -63,8 +72,6 @@ services:
       - ./airflow/plugins:/opt/airflow/plugins
     ports:
       - "8081:8080"
-
-    command: standalone
     restart: unless-stopped
 
 volumes:

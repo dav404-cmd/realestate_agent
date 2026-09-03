@@ -61,7 +61,7 @@ class UpdateRealEstate(BaseScraper):
             self.db.close_conn()
             await self.close_browser()
 
-    async def continuous_update(self, interval_sec=300,batch_wise = True , max_batches = 1):
+    async def continuous_update(self, interval_sec=300,batch_wise = False , max_batches = 1):
         await self.start_browser()
 
         BATCH_SIZE = 100
@@ -70,6 +70,8 @@ class UpdateRealEstate(BaseScraper):
                 res_updater.info("Starting update cycle")
 
                 df = self.db.get_active_ids()
+
+                res_updater.info(f"{len(df.index)} rows to update")
 
                 #make urls
                 df["source_listing_id"] = df["source_listing_id"].apply(lambda ids : f"https://realestate.co.jp/en/forsale/view/{ids}")

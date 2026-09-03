@@ -170,6 +170,4 @@ class BaseScraper:
         return ids
 
     async def store_image(self,listing_id,urls):
-        ids = await asyncio.to_thread(self.image_db.insert_ima_url,listing_id,urls)
-        scr_log.info(f"Inserted {len(ids)} new rows into image db .")
-        return ids
+        await asyncio.to_thread(self.image_db.insert_ima_url,listing_id,urls)

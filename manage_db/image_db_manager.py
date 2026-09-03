@@ -1,5 +1,5 @@
 import psycopg2
-from psycopg2.extras import RealDictCursor
+from psycopg2.extras import RealDictCursor,execute_values
 
 from dotenv import load_dotenv
 import os
@@ -59,23 +59,37 @@ class ImageDb:
         self.conn.commit()
         image_log.info("created jp_realestate_image table")
 
-    def insert_ima_url(self,listing_id,urls_pack):
-        _id = []
-        for order,url in enumerate(urls_pack):
-            query = """
-            INSERT INTO jp_realestate_image (listing_id,image_order,image_url)
-            VALUES (%s,%s,%s)
-            ON CONFLICT (listing_id, image_order) 
+    def insert_ima_url(self, listing_id, urls_pack):
+        if not urls_pack:
+            return []
+
+        values = [
+            (listing_id, order, url)
+            for order, url in enumerate(urls_pack)
+        ]
+
+        #todo : maybe remove returning id , it makes the operation cheaper
+        query = """
+            INSERT INTO jp_realestate_image
+                (listing_id, image_order, image_url)
+            VALUES %s
+            ON CONFLICT (listing_id, image_order)
             DO NOTHING
             RETURNING id;
-            """
-            self.cursor.execute(query,(listing_id,order,url))
-            row = self.cursor.fetchone()
-            if row:
-                _id.append(row["id"])
+        """
+
+        execute_values(
+            self.cursor,
+            query,
+            values,
+            page_size=len(values)
+        )
+
         self.conn.commit()
-        image_log.info(f"inserted {len(_id)} images for {listing_id}.")
-        return _id
+
+        image_log.info(
+            f"inserted {len(values)} images for {listing_id}."
+        )
 
     def get_images(self,_id):
         query = """

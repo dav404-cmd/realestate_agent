@@ -3,6 +3,6 @@ from manage_db.db_manager_v1 import DbManagerV1
 
 if __name__ == "__main__":
     db = DbManagerV1("jp_realestate_v1",None)
-    df =[row[0] for row in db.get_options("structure")]
-    print(df)
+    rows = db.get_broken_data()
+    print(rows)
     db.close_conn()

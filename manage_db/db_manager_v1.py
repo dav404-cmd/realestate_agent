@@ -1,7 +1,7 @@
 import json
 
 import psycopg2
-from psycopg2.extras import RealDictCursor
+from psycopg2.extras import RealDictCursor , execute_values
 from psycopg2 import sql
 
 from sqlalchemy import create_engine
@@ -77,31 +77,34 @@ class DbManagerV1: #todo : remove table_name and add logging.
         self.conn.commit()
         db_log.info(f"Table {self.table_name} has been created.")
 
-    #todo:update last_update if duplicate is found , last_update defaults to scraped_at .
     def insert_data(self,listings): # Stores the data of a page at once
-        query = sql.SQL("""
-        INSERT INTO {table} (price_yen,source_listing_id,source,data)
-        VALUES (%s,%s,%s,%s)
+        query = """
+        INSERT INTO jp_realestate_v1 (price_yen,source_listing_id,source,data)
+        VALUES %s
         ON CONFLICT (source,source_listing_id) DO NOTHING
         RETURNING id , source_listing_id ;
-        """).format(table = sql.Identifier(self.table_name))
+        """
 
-        ids = {}
-        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
-            for listing in listings:
-                clean_payload = dict(listing)
-                price_yen = clean_payload.pop('price_yen',None)
-                source_listing_id = clean_payload.pop('source_listing_id',None)
+        values = [(
+                    d.pop('price_yen',None),
+                    d.pop('source_listing_id',None),
+                    self.source,
+                    json.dumps(d, ensure_ascii=False)
+                   )
+                  for listing in listings
+                  for d in [dict(listing)]
+                  ]
 
-                cur.execute(query,[
-                    price_yen,source_listing_id,self.source,
-                    json.dumps(clean_payload,ensure_ascii=False)
-                ])
-                result = cur.fetchone()
-                if result:
-                    ids[result["source_listing_id"]] = result["id"]
-            self.conn.commit()
-        return ids
+        results = execute_values(
+            self.cursor,
+            query,
+            values,
+            page_size= 100,
+            fetch=True)
+
+        self.conn.commit()
+
+        return {row["source_listing_id"] : row["id"] for row in results if row}
 
     def delete_all(self):
         query = sql.SQL("""
@@ -204,7 +207,7 @@ class DbManagerV1: #todo : remove table_name and add logging.
         SELECT id,source_listing_id 
         FROM {self.table_name}
         WHERE status = 'active'
-        AND last_update < NOW() - INTERVAL '24 hours'
+        AND last_update < NOW() - INTERVAL '2 days'
         ORDER BY last_update ASC;
         """
         # todo : think the time though .
@@ -360,3 +363,18 @@ class DbManagerV1: #todo : remove table_name and add logging.
         results = self.cursor.fetchall()
         return [row['id'] for row in results] if results else None
 
+    def get_broken_data(self):
+        query = """
+        SELECT COUNT(*)
+        FROM jp_realestate_v1
+        WHERE
+            data ? 'Size'
+            OR data ? 'Location'
+            OR data ? 'Year Built'
+            OR data ? 'Building Name'
+            OR data ? 'Maintenance Fee'
+            AND status = 'expired';
+        """
+        self.cursor.execute(query)
+        results = self.cursor.fetchall()
+        return results

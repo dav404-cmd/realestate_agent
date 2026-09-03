@@ -1,8 +1,9 @@
 import asyncio
+import pandas as pd
 
 from scraper.japan.realestate.xpaths import EXPIRED
 from scraper.core.base_scraper import BaseScraper
-from scraper.japan.realestate.data_extractor import extract_images_via_overlay,extract_static_dom_data
+from scraper.japan.realestate.data_extractor import extract_static_dom_data
 from scraper.japan.realestate.clean_data import clean_and_normalize_dict
 
 from manage_db.db_manager_v1 import DbManagerV1
@@ -10,16 +11,16 @@ from manage_db.image_db_manager import ImageDb
 
 from utils.logger import get_logger
 
-res_updater = get_logger("RealEstateDataUpdater","scraper")
+res_updater = get_logger("RealEstateReScraper","scraper")
 
-class MetaDataUpdater(BaseScraper):
+class ReScrape(BaseScraper):
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.db = DbManagerV1(table_name="jp_realestate_v1")
         self.db_img = ImageDb()
 
-    async def update_card(self,listing_ids,urls,image_ids,start_browser = True): #todo : fix the image extraction .
+    async def update_card(self,listing_ids,urls,start_browser = True):
         if start_browser:
             await self.start_browser()
 
@@ -57,16 +58,6 @@ class MetaDataUpdater(BaseScraper):
                     self.db.update_listing(listing_id,clean_data)
                     #print(f"{index} data : {clean_data}")
 
-                    if listing_id not in image_ids:
-                        try:
-                            await page.wait_for_selector("figure.cursor-pointer", timeout=5000)
-                        except:
-                            res_updater.info(f"{listing_id} has no gallery")
-
-                        images = await extract_images_via_overlay(page) #todo: update data in update_status
-                        self.db_img.insert_ima_url(listing_id,images)
-                        res_updater.info(f"found image for {index}")
-
                 self.db.update_last_update(listing_id)
 
             except Exception as e:
@@ -89,7 +80,24 @@ class MetaDataUpdater(BaseScraper):
             self.db.close_conn()
             await self.close_browser()
 
-    async def continuous_update(self, interval_sec=300,batch_wise = True , max_batches = 1):
+    def get_bad_id(self):
+        # change this based on the issue of specific data
+        query = """
+        SELECT id , source_listing_id
+        FROM jp_realestate_v1
+        WHERE
+            data ? 'Size'
+            OR data ? 'Location'
+            OR data ? 'Year Built'
+            OR data ? 'Building Name'
+            OR data ? 'Maintenance Fee';
+        """
+        engine = self.db.get_db_engine()
+        df = pd.read_sql(query,engine)
+        return df
+
+    # doesnt scrape images
+    async def continuous_update(self, interval_sec=5,batch_wise = False , max_batches = 1):
         await self.start_browser()
 
         BATCH_SIZE = 100
@@ -98,20 +106,19 @@ class MetaDataUpdater(BaseScraper):
             while True:
                 res_updater.info("Starting update cycle")
 
-                df = self.db.get_active_ids_metadata()
+                df = self.get_bad_id()
 
                 res_updater.info(f"{len(df.index)} rows to update")
 
-                image_ids = self.db_img.get_listing_ids_with_images()
 
                 #make urls
-                df["source_listing_id"] = df["source_listing_id"].apply(lambda ids : f"https://realestate.co.jp/en/forsale/view/{ids}")
+                df["source_listing_id"] = df["source_listing_id"].apply(lambda source_id : f"https://realestate.co.jp/en/forsale/view/{source_id}")
 
                 listing_ids = df["id"].tolist()
                 urls = df["source_listing_id"].tolist()
 
                 if not listing_ids or not urls:
-                    res_updater.warning("No active listing found")
+                    res_updater.warning("No bad listing found")
                     if batch_wise:
                         break
                     await asyncio.sleep(interval_sec)
@@ -123,7 +130,6 @@ class MetaDataUpdater(BaseScraper):
                     await self.update_card(
                         listing_ids=listing_ids[start:end],
                         urls=urls[start:end],
-                        image_ids=image_ids,
                         start_browser=False
                     )
 
@@ -140,12 +146,12 @@ class MetaDataUpdater(BaseScraper):
                         res_updater.info(f"Stopped the updater after {batch_number}")
                         return
 
+                    await asyncio.sleep(interval_sec)
 
-                res_updater.info("Update cycle completed.")
-                await asyncio.sleep(interval_sec)
+                res_updater.info("re scrape cycle completed.")
 
         except KeyboardInterrupt:
-            res_updater.exception("Cycle stopped by user")
+            res_updater.exception("re scrape stopped by user")
         except Exception as e:
             res_updater.exception(f"Error {e}")
 
@@ -154,6 +160,6 @@ class MetaDataUpdater(BaseScraper):
             await self.close_browser()
 
 if __name__ == "__main__":
-    updater = MetaDataUpdater(None,None)
+    updater = ReScrape(None,None)
     task = updater.continuous_update()
     asyncio.run(task)
