@@ -1,12 +1,11 @@
 <script>
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { filters, defaultFilters } from '../stores/search.js';
-	import { getCachedOptions } from '../utils/optionsCache.js';
+	import { optionsStore, ensureOptions } from '../utils/optionsCache.js';
 
 	const dispatch = createEventDispatcher();
 
 	let expanded = false;
-	let optionCache = {};
 
 	const SORT_OPTIONS = [
 		{ value: 'price_yen:asc', label: 'Price, low to high' },
@@ -14,18 +13,10 @@
 		{ value: 'scraped_at:desc', label: 'Newest first' }
 	];
 
-	async function loadOptions(column) {
-		try {
-			optionCache = { ...optionCache, [column]: await getCachedOptions(column) };
-		} catch {
-			optionCache = { ...optionCache, [column]: [] };
-		}
-	}
-
 	onMount(() => {
-		loadOptions('prefecture');
-		loadOptions('structure');
-		loadOptions('occupancy');
+		ensureOptions('prefecture');
+		ensureOptions('structure');
+		ensureOptions('occupancy');
 	});
 
 	function handleSortChange(e) {
@@ -54,7 +45,7 @@
 			<span>Prefecture</span>
 			<select bind:value={$filters.prefecture}>
 				<option value="">Any</option>
-				{#each optionCache.prefecture ?? [] as opt}
+				{#each $optionsStore.prefecture?.options ?? [] as opt}
 					<option value={opt}>{opt}</option>
 				{/each}
 			</select>
@@ -92,7 +83,7 @@
 				<span>Structure</span>
 				<select bind:value={$filters.structure}>
 					<option value="">Any</option>
-					{#each optionCache.structure ?? [] as opt}
+					{#each $optionsStore.structure?.options ?? [] as opt}
 						<option value={opt}>{opt}</option>
 					{/each}
 				</select>
@@ -102,7 +93,7 @@
 				<span>Occupancy</span>
 				<select bind:value={$filters.occupancy}>
 					<option value="">Any</option>
-					{#each optionCache.occupancy ?? [] as opt}
+					{#each $optionsStore.occupancy?.options ?? [] as opt}
 						<option value={opt}>{opt}</option>
 					{/each}
 				</select>

@@ -1,14 +1,18 @@
+import { writable, get } from 'svelte/store';
 import { getColumnOptions } from '../api/query.js';
 
 const TTL_MS = 60 * 60 * 1000;
 
-const cache = new Map();
+const store = writable({});
 const inFlight = new Map();
 
-export async function getCachedOptions(column) {
-	const entry = cache.get(column);
-	if (entry && entry.expiresAt > Date.now()) {
-		return entry.options;
+export const optionsStore = { subscribe: store.subscribe };
+
+export function ensureOptions(column) {
+	const state = get(store);
+	const entry = state[column];
+	if (entry && entry.expiresAt > Date.now() && entry.options.length > 0) {
+		return Promise.resolve(entry.options);
 	}
 
 	if (inFlight.has(column)) {
@@ -18,7 +22,9 @@ export async function getCachedOptions(column) {
 	const promise = getColumnOptions(column)
 		.then((res) => {
 			const options = res.options || [];
-			cache.set(column, { options, expiresAt: Date.now() + TTL_MS });
+			if (options.length > 0) {
+				store.update((s) => ({ ...s, [column]: { options, expiresAt: Date.now() + TTL_MS } }));
+			}
 			inFlight.delete(column);
 			return options;
 		})

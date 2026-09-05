@@ -1,6 +1,6 @@
 <script>
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { getCachedOptions } from '../utils/optionsCache.js';
+	import { optionsStore, ensureOptions } from '../utils/optionsCache.js';
 
 	export let initial = null;
 	export let submitLabel = 'Save';
@@ -40,19 +40,10 @@
 	let form = { ...blank(), ...(initial ?? {}) };
 	let nameError = '';
 
-	let optionCache = {};
-	async function loadOptions(column) {
-		try {
-			optionCache = { ...optionCache, [column]: await getCachedOptions(column) };
-		} catch {
-			optionCache = { ...optionCache, [column]: [] };
-		}
-	}
-
 	onMount(() => {
-		loadOptions('prefecture');
-		loadOptions('structure');
-		loadOptions('occupancy');
+		ensureOptions('prefecture');
+		ensureOptions('structure');
+		ensureOptions('occupancy');
 	});
 
 	function submit(e) {
@@ -109,7 +100,7 @@
 				<span>Prefecture</span>
 				<select bind:value={form.prefecture}>
 					<option value="">Any</option>
-					{#each optionCache.prefecture ?? [] as opt}
+					{#each $optionsStore.prefecture?.options ?? [] as opt}
 						<option value={opt}>{opt}</option>
 					{/each}
 				</select>
@@ -132,7 +123,7 @@
 				<span>Structure</span>
 				<select bind:value={form.structure}>
 					<option value="">Any</option>
-					{#each optionCache.structure ?? [] as opt}
+					{#each $optionsStore.structure?.options ?? [] as opt}
 						<option value={opt}>{opt}</option>
 					{/each}
 				</select>
@@ -141,7 +132,7 @@
 				<span>Occupancy</span>
 				<select bind:value={form.occupancy}>
 					<option value="">Any</option>
-					{#each optionCache.occupancy ?? [] as opt}
+					{#each $optionsStore.occupancy?.options ?? [] as opt}
 						<option value={opt}>{opt}</option>
 					{/each}
 				</select>
