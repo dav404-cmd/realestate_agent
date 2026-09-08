@@ -376,5 +376,5 @@ class DbManagerV1: #todo : remove table_name and add logging.
             AND status = 'expired';
         """
         self.cursor.execute(query)
-        results = self.cursor.fetchall()
+        results = self.cursor.fetchone()
         return results

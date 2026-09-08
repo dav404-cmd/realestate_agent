@@ -8,10 +8,11 @@ from psycopg2.extras import RealDictCursor
 import pytest
 from sqlalchemy import text
 
+pytestmark = pytest.mark.integration
 
 @pytest.fixture
 def db():
-    db_logic = DbManagerV1("jp_realestate")
+    db_logic = DbManagerV1("jp_realestate_v1")
     yield db_logic
     db_logic.close_conn()
 
@@ -53,4 +54,19 @@ def test_json_2():
     assert json_data is not None
     assert len(json_data) > 0
 
-# todo: make test of query builder .
+# check for bad data
+def test_bad_data(db):
+    uncleaned = db.get_broken_data()
+    uncleaned_count = uncleaned["count"]
+
+    query = """
+    SELECT COUNT(*)
+        FROM jp_realestate_v1
+        WHERE price_yen IS NULL 
+    """
+
+    db.cursor.execute(query)
+    price_null_count = db.cursor.fetchone()['count']
+
+    assert int(uncleaned_count) == 0 , f"Uncleaned data is present in db , count : {uncleaned_count}"
+    assert int(price_null_count) == 0 , f"Listing with price null present in db , count : {price_null_count}"
