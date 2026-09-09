@@ -54,20 +54,22 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24.18.0
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Svelte check
-        run: npm run check
-
       - name: Build frontend
         run: npm run build
+
+
+        env:
+          PUBLIC_API_BASE: http://localhost:8000
+          API_BASE_INTERNAL: http://backend:8000

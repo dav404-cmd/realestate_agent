@@ -1,10 +1,10 @@
 import pytest
-from ai_agent.agent_runtime import MultiLLm
-from ai_agent.llm_wrappers import GloqLLM,OpenRouterLLM
-
 
 @pytest.mark.integration
 def test_at_least_one_model_works():
+    from ai_agent.agent_runtime import MultiLLm
+    from ai_agent.llm_wrappers import GloqLLM, OpenRouterLLM
+
     models = [
                 GloqLLM("openai/gpt-oss-120b"),
                 OpenRouterLLM("nvidia/nemotron-3-super-120b-a12b:free"),

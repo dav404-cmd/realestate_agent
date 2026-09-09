@@ -5,10 +5,11 @@ from pathlib import Path
 
 import json
 
+pytestmark = pytest.mark.integration
+
 from scraper.japan.realestate.logic import RealestateScraperLogic
 from tests.logic_replica.scraper_runner import RealestateScraperRunnerReplica
 
-pytestmark = pytest.mark.integration
 
 REQUIRED_LISTING_FIELDS = {
     "source_listing_id",

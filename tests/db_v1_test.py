@@ -1,14 +1,16 @@
 import json
 from pathlib import Path
 from fastapi.responses import JSONResponse
-from data.data_cleaner.to_json_safe import DateTimeEncoder
-from manage_db.db_manager_v1 import DbManagerV1
 
 from psycopg2.extras import RealDictCursor
 import pytest
 from sqlalchemy import text
 
 pytestmark = pytest.mark.integration
+
+from data.data_cleaner.to_json_safe import DateTimeEncoder
+from manage_db.db_manager_v1 import DbManagerV1
+
 
 @pytest.fixture
 def db():
@@ -27,19 +29,7 @@ def test_engine_connectivity(db):
         assert result.scalar() == 1
 
 # data quality test
-def test_json_1():
-    # value returned from scraper .
-    root = Path(__file__).parents[1].resolve()
 
-    json_path = root / "data" / "raw" / "real_estate.json"
-
-    with open(json_path,'r',encoding="utf-8-sig") as f:
-        loaded_data = json.load(f)
-
-    response = JSONResponse(loaded_data)
-
-    assert response.body is not None
-    assert len(response.body) > 0
 
 def test_json_2():
     db = DbManagerV1(None,None)

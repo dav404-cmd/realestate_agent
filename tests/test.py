@@ -5,7 +5,7 @@ def main():
     root = Path(__file__).parent
     exit_code = pytest.main([
         str(root / "scraper_test.py"),
-        str(root / "db_test_v1.py"),
+        str(root / "db_v1_test.py"),
         str(root / "agent_test.py"),
         "-v"
     ])
