@@ -14,8 +14,8 @@ export const defaultFilters = {
 	min_size: null,
 	max_size: null,
 	limit: 24,
-	sort_by: 'price_yen',
-	sort_order: 'asc'
+	sort_by: 'last_update',
+	sort_order: 'desc'
 };
 
 export const filters = writable({ ...defaultFilters });

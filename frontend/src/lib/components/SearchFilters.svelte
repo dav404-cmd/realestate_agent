@@ -8,9 +8,9 @@
 	let expanded = false;
 
 	const SORT_OPTIONS = [
+		{ value: 'scraped_at:desc', label: 'Newest first' },
 		{ value: 'price_yen:asc', label: 'Price, low to high' },
-		{ value: 'price_yen:desc', label: 'Price, high to low' },
-		{ value: 'scraped_at:desc', label: 'Newest first' }
+		{ value: 'price_yen:desc', label: 'Price, high to low' }
 	];
 
 	onMount(() => {

@@ -26,6 +26,8 @@ $: sourceUrl = listing ? getListingUrl(listing.source_listing_id, listing.source
 		['occupancy', 'Occupancy'],
 		['unit_floor', 'Floor'],
 		['total_floors', 'Total floors'],
+		['floor_area_ratio' , 'Floor area ratio'],
+		['building_area_ratio' , 'Building area ratio'],
 		['direction_facing', 'Facing'],
 		['transaction_type', 'Transaction'],
 		['land_rights', 'Land rights'],
@@ -106,11 +108,18 @@ $: sourceUrl = listing ? getListingUrl(listing.source_listing_id, listing.source
 			</dl>
 		</div>
 
-		{#if data.building_description}
+		{#if data.description}
 			<div class="description">
 				<h2>About this building</h2>
-				<p>{data.building_description}</p>
+				<p>{data.description}</p>
 			</div>
+		{/if}
+
+		{#if data.property_description}
+		<div class = "description">
+			<h2>About this property</h2>
+			<p>{data.property_description}</p>
+		</div>
 		{/if}
 
 		{#if data.landmarks}
