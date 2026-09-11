@@ -9,6 +9,9 @@ services:
     env_file:
       - .env
 
+    environment:
+      - PORT=8000
+
     ports:
       - "8000:8000"
 

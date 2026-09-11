@@ -9,4 +9,4 @@ RUN playwright install --with-deps chromium
 
 COPY . .
 
-CMD ["uvicorn", "apis.main_api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn apis.main_api:app --host 0.0.0.0 --port $PORT"]
