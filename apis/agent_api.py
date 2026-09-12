@@ -24,8 +24,8 @@ def chat_agent(
     body: ChatRequest
 ):
 
+    runtime = request.app.state.agent_runtime
     try:
-        runtime = request.app.state.agent_runtime
 
         if not body.thread_id:
             api_log.info(f"Received new chat request for user : {body.user_id}")
@@ -55,6 +55,7 @@ def chat_agent(
         }
 
     except Exception as e:
+        runtime.agent_db.conn.rollback()
         api_log.exception(f"Error during chat : {e}")
         raise HTTPException(
             status_code=500,
@@ -66,11 +67,12 @@ def get_message(
         request : Request,
         thread_id : str
 ):
+    runtime = request.app.state.agent_runtime
     try:
-        runtime = request.app.state.agent_runtime
         messages = runtime.agent_db.get_messages(thread_id)
         return messages
     except Exception as e :
+        runtime.agent_db.conn.rollback()
         api_log.exception(f"error during message retrival : {e}")
         raise HTTPException(
             status_code= 500,
@@ -82,11 +84,12 @@ def get_chats(
         request : Request ,
         user_id : str
 ):
+    runtime = request.app.state.agent_runtime
     try :
-        runtime = request.app.state.agent_runtime
         threads = runtime.agent_db.get_threads(user_id)
         return threads
     except Exception as e:
+        runtime.agent_db.conn.rollback()
         api_log.exception(f"error during chat retrival : {e}")
         raise HTTPException(
             status_code=500,
