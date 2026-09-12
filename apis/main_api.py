@@ -21,7 +21,7 @@ app.add_middleware(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://tsubonote.vercel.app/",
+        "https://tsubonote.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
