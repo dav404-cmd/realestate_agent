@@ -3,6 +3,10 @@
 ## Existing Tables 
 - jp_realestate 
 - users
+- user_preference
+- jp_realestate_image
+- agent_message
+- agent_thread
 
 ---
 
