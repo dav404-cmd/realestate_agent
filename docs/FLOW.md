@@ -1,5 +1,7 @@
 # Listing Data Flow
 
+`!!! THIS DOC IS OUTDATED.`
+
 ## 1. Data Extraction
 - Listings are scraped from external sources.
 - Raw listing data is collected in inconsistent formats.

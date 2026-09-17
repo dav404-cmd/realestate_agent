@@ -59,6 +59,132 @@ Tsubonote is an attempt to bridge that gap.
 
 ---
 
+## Architecture
+
+```mermaid
+
+flowchart TD
+
+subgraph CLIENT["Browser Client"]
+    SVELTE["SvelteKit"]
+    EXPLORE["Explore & Detail"]
+    AGENT_UI["AI Agent UI"]
+    CLIENT_API["API Client"]
+    SEARCH["Search Store"]
+    THREADS["Thread Store"]
+end
+
+subgraph API["Backend APIs"]
+    FASTAPI["FastAPI"]
+    PROPERTY["Property API"]
+    AUTH["Auth & Preferences"]
+    AGENT_API["Agent API"]
+end
+
+subgraph AI["AI Search Workflow"]
+    RUNTIME["Agent Runtime"]
+    GRAPH["LangGraph Workflow"]
+    INTENT["Intent Router"]
+    QUERY["Query Builder"]
+    SEARCH_EXEC["Search Executor"]
+end
+
+subgraph INGEST["Listing Ingestion"]
+    SCRAPER["Playwright Scraper"]
+    EXTRACT["Extract & Normalize"]
+    BROWSER["Browser / Proxy"]
+    UPDATER["Listing Updater"]
+end
+
+subgraph OPS["Operations"]
+    AIRFLOW["Airflow"]
+    DEPLOY["Docker Deployment"]
+end
+
+DB_LAYER["Database Layer"]
+POSTGRES[("Supabase PostgreSQL")]
+
+SVELTE --> EXPLORE
+SVELTE --> AGENT_UI
+
+EXPLORE --> SEARCH
+EXPLORE --> CLIENT_API
+
+AGENT_UI --> THREADS
+AGENT_UI --> CLIENT_API
+
+CLIENT_API -->|"HTTP"| FASTAPI
+
+FASTAPI --> PROPERTY
+FASTAPI --> AUTH
+FASTAPI --> AGENT_API
+
+PROPERTY --> DB_LAYER
+AUTH --> DB_LAYER
+
+AGENT_API --> RUNTIME
+RUNTIME --> GRAPH
+
+GRAPH --> INTENT
+INTENT -->|"Property Search"| QUERY
+QUERY --> SEARCH_EXEC
+SEARCH_EXEC --> DB_LAYER
+
+RUNTIME -->|"Conversation History"| DB_LAYER
+
+DB_LAYER --> POSTGRES
+
+AIRFLOW -->|"Scrape Schedule"| SCRAPER
+AIRFLOW -->|"Update Schedule"| UPDATER
+
+SCRAPER --> BROWSER
+SCRAPER --> EXTRACT
+
+EXTRACT -->|"Listings / Images"| DB_LAYER
+UPDATER -->|"Status / Metadata"| DB_LAYER
+
+DEPLOY --> FASTAPI
+DEPLOY --> SVELTE
+
+click SVELTE "https://github.com/dav404-cmd/realestate_agent/tree/main/frontend"
+click EXPLORE "https://github.com/dav404-cmd/realestate_agent/tree/main/frontend/src/routes/feed"
+click AGENT_UI "https://github.com/dav404-cmd/realestate_agent/tree/main/frontend/src/routes/agent"
+click FASTAPI "https://github.com/dav404-cmd/realestate_agent/blob/main/apis/main_api.py"
+click PROPERTY "https://github.com/dav404-cmd/realestate_agent/blob/main/apis/data_querying.py"
+click AUTH "https://github.com/dav404-cmd/realestate_agent/blob/main/apis/auth.py"
+click AGENT_API "https://github.com/dav404-cmd/realestate_agent/blob/main/apis/agent_api.py"
+click RUNTIME "https://github.com/dav404-cmd/realestate_agent/blob/main/ai_agent/agent_runtime.py"
+click GRAPH "https://github.com/dav404-cmd/realestate_agent/blob/main/ai_agent/agent_graph.py"
+click INTENT "https://github.com/dav404-cmd/realestate_agent/blob/main/ai_agent/nodes/intent_router.py"
+click QUERY "https://github.com/dav404-cmd/realestate_agent/blob/main/ai_agent/nodes/query_builder.py"
+click SEARCH_EXEC "https://github.com/dav404-cmd/realestate_agent/blob/main/ai_agent/nodes/search_executor.py"
+click DB_LAYER "https://github.com/dav404-cmd/realestate_agent/blob/main/manage_db/db_manager_v1.py"
+click POSTGRES "https://github.com/dav404-cmd/realestate_agent/blob/main/docs/DB_SCHEMA.md"
+click SCRAPER "https://github.com/dav404-cmd/realestate_agent/tree/main/scraper/japan/realestate"
+click EXTRACT "https://github.com/dav404-cmd/realestate_agent/blob/main/scraper/japan/realestate/data_extractor.py"
+click BROWSER "https://github.com/dav404-cmd/realestate_agent/blob/main/scraper/core/base_scraper.py"
+click UPDATER "https://github.com/dav404-cmd/realestate_agent/blob/main/scraper/japan/realestate/updater.py"
+click AIRFLOW "https://github.com/dav404-cmd/realestate_agent/blob/main/airflow/dags/scraper_dag.py"
+click DEPLOY "https://github.com/dav404-cmd/realestate_agent/blob/main/docker-compose.yaml"
+
+classDef client fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef api fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef ai fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef ingest fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef ops fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef db fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+
+class SVELTE,EXPLORE,AGENT_UI,CLIENT_API,SEARCH,THREADS client
+class FASTAPI,PROPERTY,AUTH,AGENT_API api
+class RUNTIME,GRAPH,INTENT,QUERY,SEARCH_EXEC ai
+class SCRAPER,EXTRACT,BROWSER,UPDATER ingest
+class AIRFLOW,DEPLOY ops
+class DB_LAYER,POSTGRES db
+
+```
+
+---
+
 ## What Tsubonote does
 
 ### Property Search
@@ -144,44 +270,6 @@ scraping is not enabled there.
 | Deployment         | **Render + Vercel**       |
 
 The numbers above represent the current development dataset and will change as the scraper continues running.
-
----
-
-## Architecture
-
-```text
-                    ┌──────────────────────┐
-                    │   Property Sources   │
-                    │  realestate.co.jp    │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │   Playwright Scraper │
-                    │  collection + update │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │      PostgreSQL      │
-                    │   Supabase Database  │
-                    └──────────┬───────────┘
-                               │
-                 ┌─────────────┴─────────────┐
-                 ▼                           ▼
-        ┌──────────────────┐        ┌──────────────────┐
-        │   FastAPI API    │        │   AI Agent       │
-        │ search / auth /  │◄──────►│ LangGraph        │
-        │ property data    │        │ search / explain │
-        └────────┬─────────┘        └──────────────────┘
-                 │
-                 ▼
-        ┌──────────────────┐
-        │   SvelteKit UI   │
-        │ search / details │
-        │ assistant / auth │
-        └──────────────────┘
-```
 
 ---
 
@@ -337,8 +425,14 @@ realestate-agent/
 ├── scraper/           # Playwright scraper and updaters
 ├── tests/             # Tests
 ├── utils/             # Shared utilities and logging
+├── .github/            # Github ci workflow 
 ├── requirements.txt
 ├── Dockerfile
+├── docker-compose.yaml
+├── .dockerignore
+├── .gitignore
+├── pytest.ini
+├── LICENSE
 └── README.md
 ```
 
