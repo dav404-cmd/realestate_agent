@@ -30,6 +30,8 @@ class RealestateScraperLogic(BaseScraper):
     async def get_cards_id(self,url):
         await self.main_page.goto(url, wait_until="domcontentloaded")
 
+        await self.main_page.wait_for_load_state("load")
+
         cards = await self.main_page.query_selector_all(CARDS)
         res_log.info(f"found {len(cards)} cards")
         ids = []
